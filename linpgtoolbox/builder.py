@@ -124,6 +124,8 @@ class Builder:
         if smart_auto_module_combine is True:
             for _path in glob(os.path.join(source_path_in_target_folder, "*")):
                 cls.__combine(_path)
+        # 生成pyi后缀的typing提示文件
+        subprocess.check_call(["stubgen", source_path_in_target_folder, "-o", "src"])
         # 把数据写入缓存文件以供编译器读取
         builder_options: dict = {
             "source_folder": source_path_in_target_folder,
@@ -139,14 +141,7 @@ class Builder:
             json.dump(builder_options, f)
         # 编译源代码
         subprocess.check_call(
-            [
-                cls.__PYTHON_PREFIX,
-                cls.__PATH,
-                "build_ext",
-                "--build-lib",
-                target_folder,
-            ],
-            True,
+            [cls.__PYTHON_PREFIX, cls.__PATH, "build_ext", "--build-lib", target_folder]
         )
         # 删除缓存
         cls.__clean_up()
@@ -187,13 +182,17 @@ class Builder:
             subprocess.check_call(
                 [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "build"]
             )
-            # 打包文件
+            # 升级wheel工具
             subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "build", "--no-isolation"]
+                [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "wheel"]
             )
             # 升级twine
             subprocess.check_call(
                 [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "twine"]
+            )
+            # 打包文件
+            subprocess.check_call(
+                [cls.__PYTHON_PREFIX, "-m", "build", "--no-isolation"]
             )
             # 要求用户确认dist文件夹中的打包好的文件之后在继续
             if (
