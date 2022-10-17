@@ -1,4 +1,6 @@
-__pycache__/
-src/
+.idea/
 .mypy_cache/
 .vscode/
+__pycache__/
+src/
+test.py

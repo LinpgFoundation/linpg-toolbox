@@ -22,7 +22,7 @@ class Organizer:
                     sections[current_key].append(_line)
             # 处理默认数据
             result_lines: list[str] = (
-                sections["default"] if len(sections["default"]) > 0 else []
+                sorted(sections["default"]) if len(sections["default"]) > 0 else []
             )
             sections.pop("default")
             # 如果有其他的类别，则需要依次处理

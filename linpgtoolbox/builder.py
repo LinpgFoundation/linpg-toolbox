@@ -6,6 +6,8 @@ import sys
 from glob import glob
 from typing import Final
 
+from .pyinstaller import Pyinstaller
+
 
 # 搭建和打包文件的系统
 class Builder:
@@ -24,21 +26,6 @@ class Builder:
                     shutil.rmtree(file_path)
                 else:
                     cls.__remove_cache(file_path)
-
-    # 删除特定文件夹
-    @classmethod
-    def search_and_remove_folder(
-        cls, folder_to_search: str, stuff_to_remove: str
-    ) -> None:
-        # 确保folder_to_search是一个目录
-        if not os.path.isdir(folder_to_search):
-            raise NotADirectoryError("You can only search a folder!")
-        # 移除当前文件夹符合条件的目录/文件
-        for path in glob(os.path.join(folder_to_search, "*")):
-            if path.endswith(stuff_to_remove):
-                shutil.rmtree(path)
-            elif os.path.isdir(path):
-                cls.search_and_remove_folder(path, stuff_to_remove)
 
     # 如果指定文件夹存在，则移除
     @staticmethod
@@ -123,6 +110,7 @@ class Builder:
         smart_auto_module_combine: bool = False,
         remove_building_cache: bool = True,
         update_the_one_in_sitepackages: bool = False,
+        include_default_pyinstaller_program: bool = False,
         options: dict = {},
     ) -> None:
         cls.delete_file_if_exist(target_folder)
@@ -164,6 +152,11 @@ class Builder:
         cls.__clean_up()
         # 复制额外文件
         cls.copy(additional_files, source_path_in_target_folder)
+        # 写入默认的Pyinstaller程序
+        if include_default_pyinstaller_program is True:
+            Pyinstaller.generate(
+                os.path.basename(source_folder), source_path_in_target_folder
+            )
         # 通过复制init修复打包工具无法定位包的bug
         # self.copy(tuple([os.path.join(source_folder, "__init__.py")]), source_path_in_target_folder)
         # 删除在sitepackages中的旧build，同时复制新的build
