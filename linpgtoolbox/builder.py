@@ -124,8 +124,6 @@ class Builder:
         if smart_auto_module_combine is True:
             for _path in glob(os.path.join(source_path_in_target_folder, "*")):
                 cls.__combine(_path)
-        # 生成pyi后缀的typing提示文件
-        subprocess.check_call(["stubgen", source_path_in_target_folder, "-o", "src"])
         # 把数据写入缓存文件以供编译器读取
         builder_options: dict = {
             "source_folder": source_path_in_target_folder,
