@@ -3,7 +3,7 @@ import os
 __PATH: str = "%path%"
 __NAME: str = "%name%"
 
-files: list[tuple[str, str]] = []
+datas: list[tuple[str, str]] = []
 ignores: tuple[str, ...] = ("__pyinstaller", "__pycache__", ".git")
 
 for file_name in os.listdir(__PATH):
@@ -15,7 +15,7 @@ for file_name in os.listdir(__PATH):
                 ignore_this_folder = True
                 break
         if not ignore_this_folder:
-            files.append(
+            datas.append(
                 (
                     os.path.join(__PATH, file_name),
                     os.path.join(__NAME, file_name),
@@ -23,4 +23,4 @@ for file_name in os.listdir(__PATH):
             )
     # 文件
     elif "gitignore" not in file_name:
-        files.append((os.path.join(__PATH, file_name), os.path.join(__NAME)))
+        datas.append((os.path.join(__PATH, file_name), os.path.join(__NAME)))
