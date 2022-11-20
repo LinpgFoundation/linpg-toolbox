@@ -8,7 +8,7 @@ class Pyinstaller:
     __FOLDER: Final[str] = "__pyinstaller"
 
     @classmethod
-    def generate(cls, _name: str, _path: str) -> None:
+    def generate(cls, _name: str, _path: str, _hidden_imports: list[str]) -> None:
         # 确定目标__pyinstaller存放目录
         _path = os.path.join(_path, cls.__FOLDER)
         # 删除旧的目录
@@ -30,6 +30,8 @@ class Pyinstaller:
         lines[0] = lines[0].removesuffix("\n") + ", " + _name + "\n"
         lines[2] = lines[2].replace('"%path%"', _name + ".__path__[0]")
         lines[3] = lines[3].replace("%name%", _name)
+        if len(_hidden_imports) > 0:
+            lines[5] = "hiddenimports = {}\n".format(_hidden_imports)
         # 写入数据
         with open(hook_path, "w+", encoding="utf-8") as f:
             f.writelines(lines)

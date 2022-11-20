@@ -3,6 +3,8 @@ import os
 __PATH: str = "%path%"
 __NAME: str = "%name%"
 
+# no hidden import
+
 datas: list[tuple[str, str]] = []
 ignores: tuple[str, ...] = ("__pyinstaller", "__pycache__", ".git")
 

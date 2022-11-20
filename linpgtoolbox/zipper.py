@@ -2,6 +2,7 @@ import os
 import zipfile
 from glob import glob
 
+
 # 压缩包处理模块
 class Zipper:
     # 根据脚本打包所有文件
