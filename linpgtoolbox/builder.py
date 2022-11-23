@@ -110,7 +110,7 @@ class Builder:
         smart_auto_module_combine: bool = False,
         remove_building_cache: bool = True,
         update_the_one_in_sitepackages: bool = False,
-        include_default_pyinstaller_program: bool = False,
+        include_pyinstaller_program: bool = False,
         options: dict = {},
     ) -> None:
         cls.delete_file_if_exist(target_folder)
@@ -124,8 +124,6 @@ class Builder:
         if smart_auto_module_combine is True:
             for _path in glob(os.path.join(source_path_in_target_folder, "*")):
                 cls.__combine(_path)
-        # 生成pyi后缀的typing提示文件
-        subprocess.check_call(["stubgen", source_path_in_target_folder, "-o", "src"])
         # 把数据写入缓存文件以供编译器读取
         builder_options: dict = {
             "source_folder": source_path_in_target_folder,
@@ -148,9 +146,11 @@ class Builder:
         # 复制额外文件
         cls.copy(additional_files, source_path_in_target_folder)
         # 写入默认的Pyinstaller程序
-        if include_default_pyinstaller_program is True:
+        if include_pyinstaller_program is True:
             Pyinstaller.generate(
-                os.path.basename(source_folder), source_path_in_target_folder
+                os.path.basename(source_folder),
+                source_path_in_target_folder,
+                builder_options.get("hidden_imports", []),
             )
         # 通过复制init修复打包工具无法定位包的bug
         # self.copy(tuple([os.path.join(source_folder, "__init__.py")]), source_path_in_target_folder)
