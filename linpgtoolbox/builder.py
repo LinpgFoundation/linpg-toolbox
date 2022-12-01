@@ -75,15 +75,18 @@ class Builder:
                     and not currentLine.startswith("from ..")
                     and currentLine.endswith(keyEndWord)
                 ):
-                    pyFilePath = os.path.join(
+                    pyFilePath: str = os.path.join(
                         _dir_path,
                         currentLine[len(keyWord) : len(currentLine) - len(keyEndWord)]
                         + ".py",
                     )
-                    with open(pyFilePath, "r", encoding="utf-8") as f:
-                        content: list[str] = f.readlines()
-                    cls.delete_file_if_exist(pyFilePath)
-                    _lines = _lines[:_index] + content + _lines[_index + 1 :]
+                    if os.path.exists(pyFilePath):
+                        with open(pyFilePath, "r", encoding="utf-8") as f:
+                            content: list[str] = f.readlines()
+                        cls.delete_file_if_exist(pyFilePath)
+                        _lines = _lines[:_index] + content + _lines[_index + 1 :]
+                    else:
+                        _index += 1
                 else:
                     _index += 1
             # 如果模块文件夹中只剩__init__.py，则将文件夹转换成一个python文件
@@ -122,6 +125,7 @@ class Builder:
         cls.__remove_cache(source_path_in_target_folder)
         # 如果开启了智能模块合并模式
         if smart_auto_module_combine is True:
+            cls.__combine(source_path_in_target_folder)
             for _path in glob(os.path.join(source_path_in_target_folder, "*")):
                 cls.__combine(_path)
         # 把数据写入缓存文件以供编译器读取

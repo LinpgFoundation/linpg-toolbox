@@ -107,7 +107,12 @@ if __name__ == "__main__":
         # 初始化编译进程
         @classmethod
         def init(cls) -> None:
-            cls.__generate_process(_source_folder)
+            if OS_PATH.exists(_source_folder):
+                cls.__generate_process(_source_folder)
+            else:
+                _source_file: str = _source_folder + ".py"
+                if OS_PATH.exists(_source_file):
+                    cls.__generate_process(_source_file)
 
         # 开始所有的进程
         @classmethod
