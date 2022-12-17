@@ -4,9 +4,17 @@ import shutil
 import subprocess
 import sys
 from glob import glob
-from typing import Final
+from typing import Final, Optional
 
 from .pyinstaller import Pyinstaller
+
+from enum import IntEnum, auto
+
+# 选择智能合并的模式
+class SmartAutoModuleCombineMode(IntEnum):
+    DISABLE = auto()
+    FOLDER_ONLY = auto()
+    ALL_INTO_ONE = auto()
 
 
 # 搭建和打包文件的系统
@@ -110,7 +118,7 @@ class Builder:
         target_folder: str = "src",
         additional_files: tuple = tuple(),
         ignore_key_words: tuple = tuple(),
-        smart_auto_module_combine: bool = False,
+        smart_auto_module_combine: SmartAutoModuleCombineMode = SmartAutoModuleCombineMode.DISABLE,
         remove_building_cache: bool = True,
         update_the_one_in_sitepackages: bool = False,
         include_pyinstaller_program: bool = False,
@@ -124,10 +132,11 @@ class Builder:
         # 移除不必要的py缓存
         cls.__remove_cache(source_path_in_target_folder)
         # 如果开启了智能模块合并模式
-        if smart_auto_module_combine is True:
-            cls.__combine(source_path_in_target_folder)
+        if smart_auto_module_combine is not SmartAutoModuleCombineMode.DISABLE:
             for _path in glob(os.path.join(source_path_in_target_folder, "*")):
                 cls.__combine(_path)
+        if smart_auto_module_combine is SmartAutoModuleCombineMode.ALL_INTO_ONE:
+            cls.__combine(source_path_in_target_folder)
         # 把数据写入缓存文件以供编译器读取
         builder_options: dict = {
             "source_folder": source_path_in_target_folder,
@@ -180,7 +189,7 @@ class Builder:
 
     # 打包上传最新的文件
     @classmethod
-    def upload_package(cls) -> None:
+    def upload_package(cls, python_ver: Optional[str] = None) -> None:
         if os.path.exists("setup.py") or os.path.exists("setup.cfg"):
             # 升级build工具
             subprocess.check_call(
@@ -198,6 +207,23 @@ class Builder:
             subprocess.check_call(
                 [cls.__PYTHON_PREFIX, "-m", "build", "--no-isolation"]
             )
+            # 根据python_ver以及编译环境重命名
+            if python_ver is not None:
+                key_word: str = "py3-none-any.whl"
+                _evn: str = (
+                    "win_amd64"
+                    if sys.platform.startswith("win")
+                    else "manylinux_2_17_x86_64.manylinux2014_x86_64"
+                    if sys.platform.startswith("linux")
+                    else "none-any"
+                )
+                for _wheel_file in glob(os.path.join("dist", "*-" + key_word)):
+                    os.rename(
+                        _wheel_file,
+                        _wheel_file.replace(
+                            key_word, "{0}-{0}-{1}.whl".format(python_ver, _evn)
+                        ),
+                    )
             # 要求用户确认dist文件夹中的打包好的文件之后在继续
             if (
                 input(
