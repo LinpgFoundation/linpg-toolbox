@@ -37,3 +37,9 @@ warn_unreachable = true
 
 [tool.black]
 target-version = ['py310']
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*"]
