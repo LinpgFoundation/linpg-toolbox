@@ -4,11 +4,12 @@ import shutil
 import subprocess
 import sys
 from glob import glob
-from typing import Final, Optional
+from typing import Final
 
 from .pyinstaller import Pyinstaller
 
 from enum import IntEnum, auto
+
 
 # 选择智能合并的模式
 class SmartAutoModuleCombineMode(IntEnum):
@@ -19,7 +20,6 @@ class SmartAutoModuleCombineMode(IntEnum):
 
 # 搭建和打包文件的系统
 class Builder:
-
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "compiler.py")
     __PYTHON_PREFIX: Final[str] = (
         "python" if sys.platform.startswith("win") else "python3"
@@ -189,51 +189,44 @@ class Builder:
 
     # 打包上传最新的文件
     @classmethod
-    def upload_package(cls, python_ver: Optional[str] = None) -> None:
-        if os.path.exists("setup.py") or os.path.exists("setup.cfg"):
-            # 升级build工具
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "build"]
+    def upload_package(cls, python_ver: str | None = None) -> None:
+        # 升级build工具
+        subprocess.check_call(
+            [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "build"]
+        )
+        # 升级wheel工具
+        subprocess.check_call(
+            [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "wheel"]
+        )
+        # 升级twine
+        subprocess.check_call(
+            [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "twine"]
+        )
+        # 打包文件
+        subprocess.check_call([cls.__PYTHON_PREFIX, "-m", "build", "--no-isolation"])
+        # 根据python_ver以及编译环境重命名
+        if python_ver is not None:
+            key_word: str = "py3-none-any.whl"
+            _evn: str = (
+                "win_amd64"
+                if sys.platform.startswith("win")
+                else "manylinux_2_17_x86_64.manylinux2014_x86_64"
+                if sys.platform.startswith("linux")
+                else "none-any"
             )
-            # 升级wheel工具
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "wheel"]
-            )
-            # 升级twine
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "twine"]
-            )
-            # 打包文件
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "build", "--no-isolation"]
-            )
-            # 根据python_ver以及编译环境重命名
-            if python_ver is not None:
-                key_word: str = "py3-none-any.whl"
-                _evn: str = (
-                    "win_amd64"
-                    if sys.platform.startswith("win")
-                    else "manylinux_2_17_x86_64.manylinux2014_x86_64"
-                    if sys.platform.startswith("linux")
-                    else "none-any"
+            for _wheel_file in glob(os.path.join("dist", "*-" + key_word)):
+                os.rename(
+                    _wheel_file,
+                    _wheel_file.replace(
+                        key_word, f"{python_ver}-{python_ver}-{_evn}.whl"
+                    ),
                 )
-                for _wheel_file in glob(os.path.join("dist", "*-" + key_word)):
-                    os.rename(
-                        _wheel_file,
-                        _wheel_file.replace(
-                            key_word, "{0}-{0}-{1}.whl".format(python_ver, _evn)
-                        ),
-                    )
-            # 要求用户确认dist文件夹中的打包好的文件之后在继续
-            if (
-                input(
-                    'Please confirm the files in "dist" folder and enter Y to continue:'
-                )
-                == "Y"
-            ):
-                # 用twine上传文件
-                subprocess.check_call(["twine", "upload", "dist/*"])
-            # 删除缓存
-            cls.__clean_up()
-        else:
-            raise FileNotFoundError("Cannot find setup file!")
+        # 要求用户确认dist文件夹中的打包好的文件之后在继续
+        if (
+            input('Please confirm the files in "dist" folder and enter Y to continue:')
+            == "Y"
+        ):
+            # 用twine上传文件
+            subprocess.check_call(["twine", "upload", "dist/*"])
+        # 删除缓存
+        cls.__clean_up()
