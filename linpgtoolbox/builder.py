@@ -3,12 +3,11 @@ import os
 import shutil
 import subprocess
 import sys
+from enum import IntEnum, auto
 from glob import glob
 from typing import Final
 
 from .pyinstaller import Pyinstaller
-
-from enum import IntEnum, auto
 
 
 # 选择智能合并的模式
@@ -39,10 +38,7 @@ class Builder:
     @staticmethod
     def delete_file_if_exist(path: str) -> None:
         if os.path.exists(path):
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            else:
-                os.remove(path)
+            shutil.rmtree(path) if os.path.isdir(path) else os.remove(path)
 
     # 复制文件
     @staticmethod
@@ -165,8 +161,14 @@ class Builder:
                 source_path_in_target_folder,
                 builder_options.get("hidden_imports", []),
             )
-        # 通过复制init修复打包工具无法定位包的bug
-        # self.copy(tuple([os.path.join(source_folder, "__init__.py")]), source_path_in_target_folder)
+        # 创建py.typed文件
+        with open(os.path.join(source_path_in_target_folder, "py.typed"), "w") as f:
+            f.writelines(
+                [
+                    "Created by linpg-toolbox according to PEP 561.\n",
+                    "More information can be found here: https://peps.python.org/pep-0561/\n",
+                ]
+            )
         # 删除在sitepackages中的旧build，同时复制新的build
         if update_the_one_in_sitepackages is True:
             # 移除旧的build
@@ -214,7 +216,7 @@ class Builder:
                 if sys.platform.startswith("linux")
                 else "none-any"
             )
-            for _wheel_file in glob(os.path.join("dist", "*-" + key_word)):
+            for _wheel_file in glob(os.path.join("dist", f"*-{key_word}")):
                 os.rename(
                     _wheel_file,
                     _wheel_file.replace(
