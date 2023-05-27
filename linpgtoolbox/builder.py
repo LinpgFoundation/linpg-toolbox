@@ -7,6 +7,7 @@ from enum import IntEnum, auto
 from glob import glob
 from typing import Final
 
+from .pkginstaller import PackageInstaller
 from .pyinstaller import Pyinstaller
 
 
@@ -20,9 +21,6 @@ class SmartAutoModuleCombineMode(IntEnum):
 # 搭建和打包文件的系统
 class Builder:
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "compiler.py")
-    __PYTHON_PREFIX: Final[str] = (
-        "python" if sys.platform.startswith("win") else "python3"
-    )
 
     # 移除指定文件夹中的pycache文件夹
     @classmethod
@@ -146,9 +144,17 @@ class Builder:
         builder_options.update(options)
         with open("builder_data_cache.json", "w", encoding="utf-8") as f:
             json.dump(builder_options, f)
+        # 确保mypy已经安装
+        PackageInstaller.install("mypy")
         # 编译源代码
         subprocess.check_call(
-            [cls.__PYTHON_PREFIX, cls.__PATH, "build_ext", "--build-lib", target_folder]
+            [
+                PackageInstaller.PYTHON_PREFIX,
+                cls.__PATH,
+                "build_ext",
+                "--build-lib",
+                target_folder,
+            ]
         )
         # 删除缓存
         cls.__clean_up()
@@ -172,19 +178,9 @@ class Builder:
         # 删除在sitepackages中的旧build，同时复制新的build
         if update_the_one_in_sitepackages is True:
             # 移除旧的build
-            subprocess.check_call(
-                [
-                    cls.__PYTHON_PREFIX,
-                    "-m",
-                    "pip",
-                    "uninstall",
-                    os.path.basename(source_folder),
-                ]
-            )
+            PackageInstaller.uninstall(os.path.basename(source_folder))
             # 安装新的build
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "pip", "install", ".", "--user"]
-            )
+            PackageInstaller.install(".", user=True)
         # 删除build文件夹
         if remove_building_cache is True:
             cls.delete_file_if_exist("build")
@@ -193,19 +189,15 @@ class Builder:
     @classmethod
     def upload_package(cls, python_ver: str | None = None) -> None:
         # 升级build工具
-        subprocess.check_call(
-            [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "build"]
-        )
+        PackageInstaller.install("build")
         # 升级wheel工具
-        subprocess.check_call(
-            [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "wheel"]
-        )
+        PackageInstaller.install("wheel")
         # 升级twine
-        subprocess.check_call(
-            [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "twine"]
-        )
+        PackageInstaller.install("twine")
         # 打包文件
-        subprocess.check_call([cls.__PYTHON_PREFIX, "-m", "build", "--no-isolation"])
+        subprocess.check_call(
+            [PackageInstaller.PYTHON_PREFIX, "-m", "build", "--no-isolation"]
+        )
         # 根据python_ver以及编译环境重命名
         if python_ver is not None:
             key_word: str = "py3-none-any.whl"
