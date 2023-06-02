@@ -1,6 +1,5 @@
 # 整理功能模块
 class Organizer:
-
     # 整理gitignore
     @staticmethod
     def organize_gitignore(_path: str = ".gitignore") -> None:

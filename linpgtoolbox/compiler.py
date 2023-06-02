@@ -2,7 +2,8 @@ from os import path as OS_PATH
 from os import remove as OS_REMOVE
 from subprocess import check_call
 
-from setuptools import setup  # setuptools.setup import不可以在Cython.Build之后
+# setuptools.setup import不可以在Cython.Build之后
+from setuptools import setup  # type: ignore
 from Cython.Build import cythonize  # type: ignore
 
 
@@ -33,7 +34,6 @@ def _compile_file(
 
 
 if __name__ == "__main__":
-
     import json
     from glob import glob
     from multiprocessing import Process
@@ -59,7 +59,6 @@ if __name__ == "__main__":
 
     # 编译进程管理模组
     class _CompileProcessManager:
-
         # 储存进程的列表
         __processes: list[Process] = []
 

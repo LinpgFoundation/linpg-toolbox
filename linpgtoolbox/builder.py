@@ -3,12 +3,13 @@ import os
 import shutil
 import subprocess
 import sys
+from enum import IntEnum, auto
 from glob import glob
-from typing import Final, Optional
+from typing import Final
 
+from .pkginstaller import PackageInstaller
 from .pyinstaller import Pyinstaller
 
-from enum import IntEnum, auto
 
 # 选择智能合并的模式
 class SmartAutoModuleCombineMode(IntEnum):
@@ -19,11 +20,7 @@ class SmartAutoModuleCombineMode(IntEnum):
 
 # 搭建和打包文件的系统
 class Builder:
-
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "compiler.py")
-    __PYTHON_PREFIX: Final[str] = (
-        "python" if sys.platform.startswith("win") else "python3"
-    )
 
     # 移除指定文件夹中的pycache文件夹
     @classmethod
@@ -39,10 +36,7 @@ class Builder:
     @staticmethod
     def delete_file_if_exist(path: str) -> None:
         if os.path.exists(path):
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            else:
-                os.remove(path)
+            shutil.rmtree(path) if os.path.isdir(path) else os.remove(path)
 
     # 复制文件
     @staticmethod
@@ -150,9 +144,17 @@ class Builder:
         builder_options.update(options)
         with open("builder_data_cache.json", "w", encoding="utf-8") as f:
             json.dump(builder_options, f)
+        # 确保mypy已经安装
+        PackageInstaller.install("mypy")
         # 编译源代码
         subprocess.check_call(
-            [cls.__PYTHON_PREFIX, cls.__PATH, "build_ext", "--build-lib", target_folder]
+            [
+                PackageInstaller.PYTHON_PREFIX,
+                cls.__PATH,
+                "build_ext",
+                "--build-lib",
+                target_folder,
+            ]
         )
         # 删除缓存
         cls.__clean_up()
@@ -165,75 +167,62 @@ class Builder:
                 source_path_in_target_folder,
                 builder_options.get("hidden_imports", []),
             )
-        # 通过复制init修复打包工具无法定位包的bug
-        # self.copy(tuple([os.path.join(source_folder, "__init__.py")]), source_path_in_target_folder)
+        # 创建py.typed文件
+        with open(os.path.join(source_path_in_target_folder, "py.typed"), "w") as f:
+            f.writelines(
+                [
+                    "Created by linpg-toolbox according to PEP 561.\n",
+                    "More information can be found here: https://peps.python.org/pep-0561/\n",
+                ]
+            )
         # 删除在sitepackages中的旧build，同时复制新的build
         if update_the_one_in_sitepackages is True:
             # 移除旧的build
-            subprocess.check_call(
-                [
-                    cls.__PYTHON_PREFIX,
-                    "-m",
-                    "pip",
-                    "uninstall",
-                    os.path.basename(source_folder),
-                ]
-            )
+            PackageInstaller.uninstall(os.path.basename(source_folder))
             # 安装新的build
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "pip", "install", ".", "--user"]
-            )
+            PackageInstaller.install(".", user=True)
         # 删除build文件夹
         if remove_building_cache is True:
             cls.delete_file_if_exist("build")
 
     # 打包上传最新的文件
     @classmethod
-    def upload_package(cls, python_ver: Optional[str] = None) -> None:
-        if os.path.exists("setup.py") or os.path.exists("setup.cfg"):
-            # 升级build工具
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "build"]
+    def upload_package(cls, python_ver: str | None = None) -> None:
+        # 升级build工具
+        PackageInstaller.install("build")
+        # 升级wheel工具
+        PackageInstaller.install("wheel")
+        # 升级twine
+        PackageInstaller.install("twine")
+        # 打包文件
+        subprocess.check_call(
+            [PackageInstaller.PYTHON_PREFIX, "-m", "build", "--no-isolation"]
+        )
+        # 根据python_ver以及编译环境重命名
+        if python_ver is not None:
+            key_word: str = "py3-none-any.whl"
+            _evn: str = (
+                "win_amd64"
+                if sys.platform.startswith("win")
+                else "manylinux_2_17_x86_64.manylinux2014_x86_64"
+                if sys.platform.startswith("linux")
+                else "none-any"
             )
-            # 升级wheel工具
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "wheel"]
-            )
-            # 升级twine
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "pip", "install", "--upgrade", "twine"]
-            )
-            # 打包文件
-            subprocess.check_call(
-                [cls.__PYTHON_PREFIX, "-m", "build", "--no-isolation"]
-            )
-            # 根据python_ver以及编译环境重命名
-            if python_ver is not None:
-                key_word: str = "py3-none-any.whl"
-                _evn: str = (
-                    "win_amd64"
-                    if sys.platform.startswith("win")
-                    else "manylinux_2_17_x86_64.manylinux2014_x86_64"
-                    if sys.platform.startswith("linux")
-                    else "none-any"
+            for _wheel_file in glob(os.path.join("dist", f"*-{key_word}")):
+                os.rename(
+                    _wheel_file,
+                    _wheel_file.replace(
+                        key_word, f"{python_ver}-{python_ver}-{_evn}.whl"
+                    ),
                 )
-                for _wheel_file in glob(os.path.join("dist", "*-" + key_word)):
-                    os.rename(
-                        _wheel_file,
-                        _wheel_file.replace(
-                            key_word, "{0}-{0}-{1}.whl".format(python_ver, _evn)
-                        ),
-                    )
-            # 要求用户确认dist文件夹中的打包好的文件之后在继续
-            if (
-                input(
-                    'Please confirm the files in "dist" folder and enter Y to continue:'
-                )
-                == "Y"
-            ):
-                # 用twine上传文件
-                subprocess.check_call(["twine", "upload", "dist/*"])
-            # 删除缓存
-            cls.__clean_up()
-        else:
-            raise FileNotFoundError("Cannot find setup file!")
+        # 要求用户确认dist文件夹中的打包好的文件之后在继续
+        if (
+            input('Please confirm the files in "dist" folder and enter Y to continue:')
+            == "Y"
+        ):
+            # 用twine上传文件
+            subprocess.check_call(
+                [PackageInstaller.PYTHON_PREFIX, "-m", "twine", "upload", "dist/*"]
+            )
+        # 删除缓存
+        cls.__clean_up()

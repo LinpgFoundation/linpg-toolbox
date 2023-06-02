@@ -16,6 +16,8 @@ The toolkit contains the following programs.
 
 **Organizer** - A organizing tool that organizes your gitignore files
 
+**pkginstaller** - A simple package install and uninstall tool.
+
 **Pyinstaller** - Generate a Pyinstaller template for your personal repository on the fly. Typically, the template no longer requires any further changes.
 
 **Zipper** - Pack file and directory according to the linpg.zipscript file
@@ -29,6 +31,8 @@ The toolkit contains the following programs.
 - compiler.py - 被Builder调用的编译脚本，支持多进程
 
 **Organizer** - 整理工具，可以整理你的gitignore文件
+
+**pkginstaller** - 第三方库安装以及卸载
 
 **Pyinstaller** - 为你的个人库快速生成一个__pyinstaller模板。一般情况下，该模板不再需要任何的变动
 
