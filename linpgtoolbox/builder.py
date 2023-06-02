@@ -221,6 +221,8 @@ class Builder:
             == "Y"
         ):
             # 用twine上传文件
-            subprocess.check_call(["twine", "upload", "dist/*"])
+            subprocess.check_call(
+                [PackageInstaller.PYTHON_PREFIX, "-m", "twine", "upload", "dist/*"]
+            )
         # 删除缓存
         cls.__clean_up()
