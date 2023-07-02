@@ -7,8 +7,8 @@ from glob import glob
 class Zipper:
     # 根据脚本打包所有文件
     @classmethod
-    def execute(cls) -> None:
-        for _path in glob("*.linpg.zipscript"):
+    def execute(cls, _dir: str = ".") -> None:
+        for _path in glob(os.path.join(_dir, "*.linpg.zipscript")):
             # 获取路径pattern
             with open(_path, "r", encoding="utf-8") as f:
                 filesAndFoldersToZip: list[str] = f.readlines()

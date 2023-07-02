@@ -52,7 +52,7 @@ if __name__ == "__main__":
         # 储存源代码的文件的路径
         _source_folder: str = str(Data["source_folder"])
         # 需要忽略的文件的关键词
-        _ignore_key_words: tuple = tuple(Data["ignore_key_words"])
+        _ignore_key_words: tuple[str, ...] = tuple(Data["ignore_key_words"])
 
     # 移除参数文件
     OS_REMOVE("builder_data_cache.json")

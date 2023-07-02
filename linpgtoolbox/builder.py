@@ -55,7 +55,13 @@ class Builder:
     # 删除缓存
     @classmethod
     def __clean_up(cls) -> None:
-        folders_need_remove: tuple = ("dist", "Save", "build", "crash_reports", "Cache")
+        folders_need_remove: tuple[str, ...] = (
+            "dist",
+            "Save",
+            "build",
+            "crash_reports",
+            "Cache",
+        )
         for _path in folders_need_remove:
             cls.delete_file_if_exist(_path)
 
@@ -110,8 +116,8 @@ class Builder:
         cls,
         source_folder: str,
         target_folder: str = "src",
-        additional_files: tuple = tuple(),
-        ignore_key_words: tuple = tuple(),
+        additional_files: tuple[str, ...] = tuple(),
+        ignore_key_words: tuple[str, ...] = tuple(),
         smart_auto_module_combine: SmartAutoModuleCombineMode = SmartAutoModuleCombineMode.DISABLE,
         remove_building_cache: bool = True,
         update_the_one_in_sitepackages: bool = False,
