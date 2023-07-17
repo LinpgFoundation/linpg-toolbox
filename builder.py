@@ -33,5 +33,5 @@ action: str = input("Do you want to package and upload the latest build (Y/n):")
 if action == "Y":
     Builder.upload_package("cp310")
 elif action != "N":
-    Builder.delete_file_if_exist("src")
+    Builder.remove("src")
 """

@@ -1,6 +1,7 @@
 from os import path as OS_PATH
 from os import remove as OS_REMOVE
 from subprocess import check_call
+from tempfile import gettempdir
 
 # setuptools.setup import不可以在Cython.Build之后
 from setuptools import setup  # type: ignore
@@ -39,7 +40,9 @@ if __name__ == "__main__":
     from multiprocessing import Process
 
     # 加载全局参数
-    with open("builder_data_cache.json", "r", encoding="utf-8") as f:
+    with open(
+        OS_PATH.join(gettempdir(), "builder_data_cache.json"), "r", encoding="utf-8"
+    ) as f:
         Data: dict = json.load(f)
         # 是否启用debug模式
         _debug_mode: bool = bool(Data["debug_mode"])

@@ -1,10 +1,11 @@
-import json
 import os
 import shutil
 import subprocess
 import sys
 from enum import IntEnum, auto
 from glob import glob
+from json import dump
+from tempfile import gettempdir
 from typing import Final
 
 from .pkginstaller import PackageInstaller
@@ -21,6 +22,13 @@ class SmartAutoModuleCombineMode(IntEnum):
 # 搭建和打包文件的系统
 class Builder:
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "compiler.py")
+    __CACHE_FOLDERS_NEED_REMOVE: Final[list[str]] = [
+        "dist",
+        "Save",
+        "build",
+        "crash_reports",
+        "Cache",
+    ]
 
     # 移除指定文件夹中的pycache文件夹
     @classmethod
@@ -33,14 +41,23 @@ class Builder:
                     cls.__remove_cache(file_path)
 
     # 如果指定文件夹存在，则移除
+    # will be removed soon, DO NOT USE!!
+    @classmethod
+    def delete_file_if_exist(cls, path: str) -> None:
+        print("Warning: Builder.delete_file_if_exist will be deprecated soon!")
+        print("Please use Builder.remove instead!")
+        cls.remove(path)
+
+    # 如果指定文件夹存在，则移除
     @staticmethod
-    def delete_file_if_exist(path: str) -> None:
-        if os.path.exists(path):
-            shutil.rmtree(path) if os.path.isdir(path) else os.remove(path)
+    def remove(*path: str) -> None:
+        for _path in path:
+            if os.path.exists(_path):
+                shutil.rmtree(_path) if os.path.isdir(_path) else os.remove(_path)
 
     # 复制文件
     @staticmethod
-    def copy(files: tuple, target_folder: str) -> None:
+    def copy(files: tuple[str, ...], target_folder: str) -> None:
         for the_file in files:
             # 如果是文件夹
             if os.path.isdir(the_file):
@@ -55,15 +72,7 @@ class Builder:
     # 删除缓存
     @classmethod
     def __clean_up(cls) -> None:
-        folders_need_remove: tuple[str, ...] = (
-            "dist",
-            "Save",
-            "build",
-            "crash_reports",
-            "Cache",
-        )
-        for _path in folders_need_remove:
-            cls.delete_file_if_exist(_path)
+        cls.remove(*cls.__CACHE_FOLDERS_NEED_REMOVE)
 
     # 合并模块
     @classmethod
@@ -91,7 +100,7 @@ class Builder:
                     if os.path.exists(pyFilePath):
                         with open(pyFilePath, "r", encoding="utf-8") as f:
                             content: list[str] = f.readlines()
-                        cls.delete_file_if_exist(pyFilePath)
+                        cls.remove(pyFilePath)
                         _lines = _lines[:_index] + content + _lines[_index + 1 :]
                     else:
                         _index += 1
@@ -124,7 +133,7 @@ class Builder:
         include_pyinstaller_program: bool = False,
         options: dict = {},
     ) -> None:
-        cls.delete_file_if_exist(target_folder)
+        cls.remove(target_folder)
         # 复制文件到新建的src文件夹中，准备开始编译
         os.makedirs(target_folder)
         source_path_in_target_folder: str = os.path.join(target_folder, source_folder)
@@ -148,8 +157,12 @@ class Builder:
             "compiler_directives": {},
         }
         builder_options.update(options)
-        with open("builder_data_cache.json", "w", encoding="utf-8") as f:
-            json.dump(builder_options, f)
+        with open(
+            os.path.join(gettempdir(), "builder_data_cache.json"),
+            "w",
+            encoding="utf-8",
+        ) as f:
+            dump(builder_options, f)
         # 确保mypy已经安装
         PackageInstaller.install("mypy")
         # 编译源代码
@@ -189,7 +202,7 @@ class Builder:
             PackageInstaller.install(".", user=True)
         # 删除build文件夹
         if remove_building_cache is True:
-            cls.delete_file_if_exist("build")
+            cls.remove("build")
 
     # 打包上传最新的文件
     @classmethod
