@@ -1,5 +1,4 @@
-from os import path as OS_PATH
-from os import remove as OS_REMOVE
+import os
 from subprocess import check_call
 from tempfile import gettempdir
 
@@ -27,11 +26,11 @@ def _compile_file(
     )
     # 删除c文件
     if not _keep_c:
-        OS_REMOVE(_path.replace(".py", ".c"))
+        os.remove(_path.replace(".py", ".c"))
     # 生成pyi后缀的typing提示文件
-    check_call(["stubgen", _path, "-o", OS_PATH.dirname(_source_folder)])
+    check_call(["stubgen", _path, "-o", os.path.dirname(_source_folder)])
     # 删除原始py文件
-    OS_REMOVE(_path)
+    os.remove(_path)
 
 
 if __name__ == "__main__":
@@ -40,9 +39,10 @@ if __name__ == "__main__":
     from multiprocessing import Process
 
     # 加载全局参数
-    with open(
-        OS_PATH.join(gettempdir(), "builder_data_cache.json"), "r", encoding="utf-8"
-    ) as f:
+    _data_path: str = os.path.join(
+        gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
+    )
+    with open(_data_path, "r", encoding="utf-8") as f:
         Data: dict = json.load(f)
         # 是否启用debug模式
         _debug_mode: bool = bool(Data["debug_mode"])
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         _ignore_key_words: tuple[str, ...] = tuple(Data["ignore_key_words"])
 
     # 移除参数文件
-    OS_REMOVE("builder_data_cache.json")
+    os.remove(_data_path)
 
     # 编译进程管理模组
     class _CompileProcessManager:
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         # 创建编译进程
         @classmethod
         def __generate_process(cls, _path: str) -> None:
-            if not OS_PATH.isdir(_path):
+            if not os.path.isdir(_path):
                 if _path.endswith(".py") and not cls.__if_ignore(_path):
                     # 如果使用多线程
                     if _enable_multiprocessing is True:
@@ -103,17 +103,17 @@ if __name__ == "__main__":
                         )
             elif "pyinstaller" not in _path and "pycache" not in _path:
                 if not cls.__if_ignore(_path):
-                    for file_in_dir in glob(OS_PATH.join(_path, "*")):
+                    for file_in_dir in glob(os.path.join(_path, "*")):
                         cls.__generate_process(file_in_dir)
 
         # 初始化编译进程
         @classmethod
         def init(cls) -> None:
-            if OS_PATH.exists(_source_folder):
+            if os.path.exists(_source_folder):
                 cls.__generate_process(_source_folder)
             else:
                 _source_file: str = _source_folder + ".py"
-                if OS_PATH.exists(_source_file):
+                if os.path.exists(_source_file):
                     cls.__generate_process(_source_file)
 
         # 开始所有的进程

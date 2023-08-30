@@ -7,7 +7,7 @@ import pkg_resources
 
 class PackageInstaller:
     PYTHON_PREFIX: Final[str] = (
-        "python" if sys.platform.startswith("win") else "python3"
+        "python" if sys.platform.startswith("win") else f"python3.{sys.version_info[1]}"
     )
 
     # 安装（第三方）库
