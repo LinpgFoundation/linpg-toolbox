@@ -31,7 +31,7 @@ for i in range(2):
 """
 action: str = input("Do you want to package and upload the latest build (Y/n):")
 if action == "Y":
-    Builder.upload_package("cp310")
+    Builder.upload_package("cp311")
 elif action != "N":
     Builder.remove("src")
 """

@@ -8,6 +8,7 @@ from json import dump
 from tempfile import gettempdir
 from typing import Final
 
+from ._execute import execute_python
 from .pkginstaller import PackageInstaller
 from .pyinstaller import Pyinstaller
 
@@ -168,15 +169,7 @@ class Builder:
         # 确保mypy已经安装
         PackageInstaller.install("mypy")
         # 编译源代码
-        subprocess.check_call(
-            [
-                PackageInstaller.PYTHON_PREFIX,
-                cls.__PATH,
-                "build_ext",
-                "--build-lib",
-                target_folder,
-            ]
-        )
+        execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
         # 删除缓存
         cls.__clean_up()
         # 复制额外文件
@@ -216,9 +209,7 @@ class Builder:
         # 升级twine
         PackageInstaller.install("twine")
         # 打包文件
-        subprocess.check_call(
-            [PackageInstaller.PYTHON_PREFIX, "-m", "build", "--no-isolation"]
-        )
+        execute_python("-m", "build", "--no-isolation")
         # 根据python_ver以及编译环境重命名
         if python_ver is not None:
             key_word: str = "py3-none-any.whl"
@@ -242,8 +233,6 @@ class Builder:
             == "Y"
         ):
             # 用twine上传文件
-            subprocess.check_call(
-                [PackageInstaller.PYTHON_PREFIX, "-m", "twine", "upload", "dist/*"]
-            )
+            execute_python("-m", "twine", "upload", "dist/*")
         # 删除缓存
         cls.__clean_up()
