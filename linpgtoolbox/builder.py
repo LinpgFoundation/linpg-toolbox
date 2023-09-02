@@ -1,6 +1,5 @@
 import os
 import shutil
-import subprocess
 import sys
 from enum import IntEnum, auto
 from glob import glob
@@ -10,7 +9,7 @@ from typing import Final
 
 from ._execute import execute_python
 from .pkginstaller import PackageInstaller
-from .pyinstaller import Pyinstaller
+from .pyinstaller import PyInstaller
 
 
 # 选择智能合并的模式
@@ -22,7 +21,7 @@ class SmartAutoModuleCombineMode(IntEnum):
 
 # 搭建和打包文件的系统
 class Builder:
-    __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "compiler.py")
+    __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "_compiler.py")
     __CACHE_FOLDERS_NEED_REMOVE: Final[list[str]] = [
         "dist",
         "Save",
@@ -30,6 +29,7 @@ class Builder:
         "crash_reports",
         "Cache",
     ]
+    __DIST_DIR: Final[str] = "dist"
 
     # 移除指定文件夹中的pycache文件夹
     @classmethod
@@ -174,9 +174,9 @@ class Builder:
         cls.__clean_up()
         # 复制额外文件
         cls.copy(additional_files, source_path_in_target_folder)
-        # 写入默认的Pyinstaller程序
+        # 写入默认的PyInstaller程序
         if include_pyinstaller_program is True:
-            Pyinstaller.generate(
+            PyInstaller.generate(
                 os.path.basename(source_folder),
                 source_path_in_target_folder,
                 builder_options.get("hidden_imports", []),
@@ -199,40 +199,45 @@ class Builder:
         if remove_building_cache is True:
             cls.remove("build")
 
-    # 打包上传最新的文件
+    # 构建最新的release
     @classmethod
-    def upload_package(cls, python_ver: str | None = None) -> None:
+    def build(cls) -> None:
         # 升级build工具
         PackageInstaller.install("build")
         # 升级wheel工具
         PackageInstaller.install("wheel")
-        # 升级twine
-        PackageInstaller.install("twine")
         # 打包文件
         execute_python("-m", "build", "--no-isolation")
         # 根据python_ver以及编译环境重命名
-        if python_ver is not None:
-            key_word: str = "py3-none-any.whl"
-            _evn: str = (
-                "win_amd64"
-                if sys.platform.startswith("win")
-                else "manylinux_2_17_x86_64.manylinux2014_x86_64"
-                if sys.platform.startswith("linux")
-                else "none-any"
+        python_ver: str = f"cp{sys.version_info[0]}{sys.version_info[1]}"
+        key_word: str = f"py{sys.version_info[0]}-none-any.whl"
+        _evn: str = (
+            "win_amd64"
+            if sys.platform.startswith("win")
+            else "manylinux_2_17_x86_64.manylinux2014_x86_64"
+            if sys.platform.startswith("linux")
+            else "none-any"
+        )
+        for _wheel_file in glob(os.path.join(cls.__DIST_DIR, f"*-{key_word}")):
+            os.rename(
+                _wheel_file,
+                _wheel_file.replace(key_word, f"{python_ver}-{python_ver}-{_evn}.whl"),
             )
-            for _wheel_file in glob(os.path.join("dist", f"*-{key_word}")):
-                os.rename(
-                    _wheel_file,
-                    _wheel_file.replace(
-                        key_word, f"{python_ver}-{python_ver}-{_evn}.whl"
-                    ),
-                )
+
+    # 打包上传最新的文件
+    @classmethod
+    def upload(cls, confirm: bool = True) -> None:
         # 要求用户确认dist文件夹中的打包好的文件之后在继续
         if (
-            input('Please confirm the files in "dist" folder and enter Y to continue:')
+            not confirm
+            or input(
+                f'Please confirm the files in "{cls.__DIST_DIR}" folder and enter Y to continue:'
+            )
             == "Y"
         ):
+            # 升级twine
+            PackageInstaller.install("twine")
             # 用twine上传文件
-            execute_python("-m", "twine", "upload", "dist/*")
+            execute_python("-m", "twine", "upload", f"{cls.__DIST_DIR}/*")
         # 删除缓存
         cls.__clean_up()

@@ -1,7 +1,6 @@
-from os import path as PATH
-
 from linpgtoolbox.builder import Builder
-from linpgtoolbox.organizer import Organizer
+
+# from linpgtoolbox.organizer import Organizer
 
 # 整理gitignore文件
 # Organizer.organize_gitignore()
@@ -13,7 +12,7 @@ additional_files: tuple[str, ...] = ("README.md", "LICENSE", "CODE_OF_CONDUCT.md
 Builder.compile(
     "linpgtoolbox",
     additional_files=additional_files,
-    ignore_key_words=("compiler.py",),
+    ignore_key_words=("_compiler.py",),
     update_the_one_in_sitepackages=True,
     options={
         "enable_multiprocessing": True,
@@ -28,10 +27,10 @@ for i in range(2):
     print("")
 
 # 打包上传最新的文件
-"""
+
 action: str = input("Do you want to package and upload the latest build (Y/n):")
 if action == "Y":
-    Builder.upload_package("cp311")
+    Builder.build()
+    Builder.upload()
 elif action != "N":
     Builder.remove("src")
-"""

@@ -23,11 +23,14 @@ class PackageInstaller:
 
     # 升级所有（第三方）库
     @classmethod
-    def upgrade_all(cls) -> None:
-        for pkg in pkg_resources.working_set:
-            try:
-                cls.install(pkg.project_name)
-            except Exception:
-                print(
-                    f"Warning: fail to update third party package <{pkg.project_name}>"
-                )
+    def upgrade(cls, name: str = "*") -> None:
+        if name == "*":
+            for pkg in pkg_resources.working_set:
+                try:
+                    cls.install(pkg.project_name)
+                except Exception:
+                    print(
+                        f"Warning: fail to update third party package <{pkg.project_name}>"
+                    )
+        else:
+            cls.install(name)

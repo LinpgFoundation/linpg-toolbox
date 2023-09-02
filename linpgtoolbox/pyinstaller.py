@@ -3,7 +3,7 @@ import shutil
 from typing import Final
 
 
-class Pyinstaller:
+class PyInstaller:
     __FOLDER: Final[str] = "__pyinstaller"
 
     @classmethod

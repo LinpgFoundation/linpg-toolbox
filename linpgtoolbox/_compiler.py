@@ -3,7 +3,7 @@ from subprocess import check_call
 from tempfile import gettempdir
 
 # setuptools.setup import不可以在Cython.Build之后
-from setuptools import setup  # type: ignore
+from setuptools import setup
 from Cython.Build import cythonize  # type: ignore
 
 
@@ -43,19 +43,19 @@ if __name__ == "__main__":
         gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
     )
     with open(_data_path, "r", encoding="utf-8") as f:
-        Data: dict = json.load(f)
+        _data: dict = json.load(f)
         # 是否启用debug模式
-        _debug_mode: bool = bool(Data["debug_mode"])
+        _debug_mode: bool = bool(_data["debug_mode"])
         # 是否保存c文件
-        _keep_c: bool = bool(Data["keep_c"])
+        _keep_c: bool = bool(_data["keep_c"])
         # 其他次要参数
-        _compiler_directives: dict = dict(Data["compiler_directives"])
+        _compiler_directives: dict = dict(_data["compiler_directives"])
         # 是否启用多线程
-        _enable_multiprocessing: bool = bool(Data["enable_multiprocessing"])
+        _enable_multiprocessing: bool = bool(_data["enable_multiprocessing"])
         # 储存源代码的文件的路径
-        _source_folder: str = str(Data["source_folder"])
+        _source_folder: str = str(_data["source_folder"])
         # 需要忽略的文件的关键词
-        _ignore_key_words: tuple[str, ...] = tuple(Data["ignore_key_words"])
+        _ignore_key_words: tuple[str, ...] = tuple(_data["ignore_key_words"])
 
     # 移除参数文件
     os.remove(_data_path)
