@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Operating System :: OS Independent",
 ]
+license = {file = "LICENSE"}
 dependencies = ["mypy"]
 
 [project.urls]
@@ -28,7 +29,7 @@ dependencies = ["mypy"]
 
 [tool.mypy]
 python_version = "3.11"
-# disallow_any_generics = true
+disallow_any_generics = true
 disallow_untyped_defs = true
 disallow_untyped_calls = true
 warn_return_any = true

@@ -1,6 +1,7 @@
 import os
 from subprocess import check_call
 from tempfile import gettempdir
+from typing import Any
 
 # setuptools.setup import不可以在Cython.Build之后
 from setuptools import setup
@@ -13,7 +14,7 @@ def _compile_file(
     _path: str,
     _keep_c: bool,
     _debug_mode: bool,
-    _compiler_directives: dict,
+    _compiler_directives: dict[str, Any],
 ) -> None:
     setup(
         ext_modules=cythonize(
@@ -43,13 +44,13 @@ if __name__ == "__main__":
         gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
     )
     with open(_data_path, "r", encoding="utf-8") as f:
-        _data: dict = json.load(f)
+        _data: dict[str, Any] = json.load(f)
         # 是否启用debug模式
         _debug_mode: bool = bool(_data["debug_mode"])
         # 是否保存c文件
         _keep_c: bool = bool(_data["keep_c"])
         # 其他次要参数
-        _compiler_directives: dict = dict(_data["compiler_directives"])
+        _compiler_directives: dict[str, Any] = dict(_data["compiler_directives"])
         # 是否启用多线程
         _enable_multiprocessing: bool = bool(_data["enable_multiprocessing"])
         # 储存源代码的文件的路径

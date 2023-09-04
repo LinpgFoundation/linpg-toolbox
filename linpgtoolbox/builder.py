@@ -5,7 +5,7 @@ from enum import IntEnum, auto
 from glob import glob
 from json import dump
 from tempfile import gettempdir
-from typing import Final
+from typing import Any, Final
 
 from ._execute import execute_python
 from .pkginstaller import PackageInstaller
@@ -40,14 +40,6 @@ class Builder:
                     shutil.rmtree(file_path)
                 else:
                     cls.__remove_cache(file_path)
-
-    # 如果指定文件夹存在，则移除
-    # will be removed soon, DO NOT USE!!
-    @classmethod
-    def delete_file_if_exist(cls, path: str) -> None:
-        print("Warning: Builder.delete_file_if_exist will be deprecated soon!")
-        print("Please use Builder.remove instead!")
-        cls.remove(path)
 
     # 如果指定文件夹存在，则移除
     @staticmethod
@@ -132,7 +124,7 @@ class Builder:
         remove_building_cache: bool = True,
         update_the_one_in_sitepackages: bool = False,
         include_pyinstaller_program: bool = False,
-        options: dict = {},
+        options: dict[str, Any] = {},
     ) -> None:
         cls.remove(target_folder)
         # 复制文件到新建的src文件夹中，准备开始编译
@@ -148,7 +140,7 @@ class Builder:
         if smart_auto_module_combine is SmartAutoModuleCombineMode.ALL_INTO_ONE:
             cls.__combine(source_path_in_target_folder)
         # 把数据写入缓存文件以供编译器读取
-        builder_options: dict = {
+        builder_options: dict[str, Any] = {
             "source_folder": source_path_in_target_folder,
             "ignore_key_words": ignore_key_words,
             "enable_multiprocessing": True,

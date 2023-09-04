@@ -1,5 +1,7 @@
 # linpg-toolbox
 
+![PyPI - Downloads](https://img.shields.io/pypi/pyversions/linpgtoolbox?style=for-the-badge&logo=pypi)![PyPI - Downloads](https://img.shields.io/pypi/v/linpgtoolbox?style=for-the-badge&logo=pypi)![PyPI - Downloads](https://img.shields.io/pypi/dm/linpgtoolbox?style=for-the-badge&logo=pypi)
+
 Linpg-toolbox is a set of tools for managing, compiling, and uploading your own python package. It has been used within Tigeia Workshop for many years and was previously been provided as part of the Linpg Engine. To better accommodate Linpg Engine's frequent iterations work schedule, linpg-toolbox has now been split out and become available as a separate third-party package.
 
 linpg- toolbox是一个已经在缇吉娅工坊内部使用多年的开发管理以及打包工具，过去一直作为linpg引擎的一部分提供。为了能够更好地适应linpg的高速版本迭代工作，linpg-toolbox现在被拆分出来，作为单独的第三方包提供。
