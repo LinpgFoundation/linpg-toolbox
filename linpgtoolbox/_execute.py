@@ -7,5 +7,5 @@ _PYTHON_PREFIX: Final[str] = (
 )
 
 
-def execute_python(*cmd: str) -> None:
-    check_call([_PYTHON_PREFIX, *cmd])
+def execute_python(*cmd: str, _cwd: str | None = None) -> None:
+    check_call([_PYTHON_PREFIX, *cmd], cwd=_cwd)

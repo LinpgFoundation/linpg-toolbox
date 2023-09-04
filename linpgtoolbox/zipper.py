@@ -4,7 +4,6 @@ from glob import glob
 from typing import Final
 
 
-# 压缩包处理模块
 class Zipper:
     # 脚本文件扩展名
     SCRIPT_EXTENSION: Final[str] = ".linpg.zs"
@@ -24,33 +23,33 @@ class Zipper:
             if os.path.exists(zipName):
                 os.remove(zipName)
             # 开始打包文件
-            theZipFile: zipfile.ZipFile = zipfile.ZipFile(zipName, "w")
+            _zipFile: zipfile.ZipFile = zipfile.ZipFile(zipName, "w")
             for i in range(len(filesAndFoldersToZip) - 1, -1, -1):
                 if len(_pathTmp := filesAndFoldersToZip[i].removesuffix("\n")) > 0:
-                    cls.__zip(theZipFile, _pathTmp)
+                    cls.__zip(_zipFile, _pathTmp)
                 else:
                     filesAndFoldersToZip.pop(i)
             # 关闭压缩包访问
-            theZipFile.close()
+            _zipFile.close()
             # 将排序好的列表写回到脚本文件中
             with open(_path, "w+", encoding="utf-8") as f:
                 f.writelines(sorted(filesAndFoldersToZip))
 
     # 将对应路径的文件添加到压缩包中
     @classmethod
-    def __zip(cls, theZipFile: zipfile.ZipFile, _path: str) -> None:
+    def __zip(cls, _zipFile: zipfile.ZipFile, _path: str) -> None:
         # 如果路径中不带星号，则不是路径pattern，可以开始处理
         if "*" not in _path:
             # 如果是文件夹，则需要依次添加文件
             if os.path.isdir(_path):
                 for dirname, subdirs, files in os.walk(_path):
-                    theZipFile.write(dirname)
+                    _zipFile.write(dirname)
                     for filename in files:
-                        theZipFile.write(os.path.join(dirname, filename))
+                        _zipFile.write(os.path.join(dirname, filename))
             # 如果是文件，则可以之间写入
             else:
-                theZipFile.write(_path)
+                _zipFile.write(_path)
         # 处理带星号的路径pattern
         else:
             for _match_path in glob(_path):
-                cls.__zip(theZipFile, _match_path)
+                cls.__zip(_zipFile, _match_path)
