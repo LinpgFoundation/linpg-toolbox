@@ -42,7 +42,7 @@ class Zipper:
         if "*" not in _path:
             # 如果是文件夹，则需要依次添加文件
             if os.path.isdir(_path):
-                for dirname, subdirs, files in os.walk(_path):
+                for dirname, _, files in os.walk(_path):
                     _zipFile.write(dirname)
                     for filename in files:
                         _zipFile.write(os.path.join(dirname, filename))

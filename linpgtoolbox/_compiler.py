@@ -4,7 +4,7 @@ from tempfile import gettempdir
 from typing import Any
 
 # setuptools.setup import不可以在Cython.Build之后
-from setuptools import setup
+from setuptools import setup  # type: ignore
 from Cython.Build import cythonize  # type: ignore
 
 
@@ -29,7 +29,16 @@ def _compile_file(
     if not _keep_c:
         os.remove(_path.replace(".py", ".c"))
     # 生成pyi后缀的typing提示文件
-    check_call(["stubgen", _path, "-o", os.path.dirname(_source_folder)])
+    check_call(
+        [
+            "stubgen",
+            _path,
+            "-o",
+            os.path.dirname(_source_folder),
+            "--include-docstrings",
+            "--include-private",
+        ]
+    )
     # 删除原始py文件
     os.remove(_path)
 

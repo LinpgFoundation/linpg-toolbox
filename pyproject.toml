@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linpgtoolbox"
-version = "23.9"
+version = "23.10"
 authors = [
     {name = "Linpg Foundation", email = "yudong9912@gmail.com"},
 ]
@@ -17,6 +17,7 @@ requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Operating System :: OS Independent",
 ]
@@ -28,7 +29,7 @@ dependencies = ["mypy"]
 "Bug Tracker" = "https://github.com/LinpgFoundation/linpg-toolbox/issues"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 disallow_any_generics = true
 disallow_untyped_defs = true
 disallow_untyped_calls = true
@@ -37,7 +38,7 @@ warn_redundant_casts = true
 warn_unreachable = true
 
 [tool.black]
-target-version = ['py311']
+target-version = ['py312']
 
 [tool.setuptools.packages.find]
 where = ["src"]
