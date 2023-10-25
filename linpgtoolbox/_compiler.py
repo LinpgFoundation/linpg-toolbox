@@ -4,7 +4,7 @@ from tempfile import gettempdir
 from typing import Any
 
 # setuptools.setup import不可以在Cython.Build之后
-from setuptools import setup
+from setuptools import setup  # type: ignore
 from Cython.Build import cythonize  # type: ignore
 
 

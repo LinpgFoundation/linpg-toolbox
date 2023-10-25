@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import sysconfig
 from enum import IntEnum, auto
 from glob import glob
 from json import dump
@@ -14,9 +15,9 @@ from .pyinstaller import PyInstaller
 
 # 选择智能合并的模式
 class SmartAutoModuleCombineMode(IntEnum):
-    DISABLE = auto()
-    FOLDER_ONLY = auto()
-    ALL_INTO_ONE = auto()
+    DISABLE: Final[int] = auto()
+    FOLDER_ONLY: Final[int] = auto()
+    ALL_INTO_ONE: Final[int] = auto()
 
 
 # 搭建和打包文件的系统
@@ -79,7 +80,7 @@ class Builder:
                 _lines: list[str] = f.readlines()
             _index: int = 0
             while _index < len(_lines):
-                currentLine: str = _lines[_index].strip("\n")
+                currentLine: str = _lines[_index].rstrip("\n")
                 if (
                     currentLine.startswith(keyWord)
                     and not currentLine.startswith("from ..")
@@ -102,7 +103,7 @@ class Builder:
             # 如果模块文件夹中只剩__init__.py，则将文件夹转换成一个python文件
             if len(glob(os.path.join(_dir_path, "*"))) <= 1:
                 for _index in range(len(_lines)):
-                    if _lines[_index].startswith("from .."):
+                    if _lines[_index].lstrip().startswith("from .."):
                         _lines[_index] = _lines[_index].replace("from ..", "from .")
                 with open(os.path.join(_dir_path + ".py"), "w", encoding="utf-8") as f:
                     f.writelines(_lines)
@@ -126,6 +127,9 @@ class Builder:
         include_pyinstaller_program: bool = False,
         options: dict[str, Any] = {},
     ) -> None:
+        # 确保setuptools安装
+        PackageInstaller.install("setuptools")
+        # 移除cache
         cls.remove(target_folder)
         # 复制文件到新建的src文件夹中，准备开始编译
         os.makedirs(target_folder)
@@ -203,17 +207,13 @@ class Builder:
         # 根据python_ver以及编译环境重命名
         python_ver: str = f"cp{sys.version_info[0]}{sys.version_info[1]}"
         key_word: str = f"py{sys.version_info[0]}-none-any.whl"
-        _evn: str = (
-            "win_amd64"
-            if sys.platform.startswith("win")
-            else "manylinux_2_17_x86_64.manylinux2014_x86_64"
-            if sys.platform.startswith("linux")
-            else "none-any"
-        )
         for _wheel_file in glob(os.path.join(cls.__DIST_DIR, f"*-{key_word}")):
             os.rename(
                 _wheel_file,
-                _wheel_file.replace(key_word, f"{python_ver}-{python_ver}-{_evn}.whl"),
+                _wheel_file.replace(
+                    key_word,
+                    f"{python_ver}-{python_ver}-{sysconfig.get_platform().replace('-', '_')}.whl",
+                ),
             )
 
     # 打包上传最新的文件

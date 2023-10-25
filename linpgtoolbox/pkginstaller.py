@@ -1,4 +1,4 @@
-import pkg_resources
+import pkgutil
 
 from ._execute import execute_python
 
@@ -25,12 +25,10 @@ class PackageInstaller:
     @classmethod
     def upgrade(cls, name: str = "*") -> None:
         if name == "*":
-            for pkg in pkg_resources.working_set:
+            for _, name, _ in pkgutil.iter_modules():
                 try:
-                    cls.install(pkg.project_name)
+                    cls.install(name)
                 except Exception:
-                    print(
-                        f"Warning: fail to update third party package <{pkg.project_name}>"
-                    )
+                    print(f"Warning: fail to update third party package <{name}>")
         else:
             cls.install(name)

@@ -1,6 +1,6 @@
 # linpg-toolbox
 
-![PyPI - Downloads](https://img.shields.io/pypi/pyversions/linpgtoolbox?style=for-the-badge&logo=pypi)![PyPI - Downloads](https://img.shields.io/pypi/v/linpgtoolbox?style=for-the-badge&logo=pypi)![PyPI - Downloads](https://img.shields.io/pypi/dm/linpgtoolbox?style=for-the-badge&logo=pypi)
+![PyPI](https://img.shields.io/pypi/pyversions/linpgtoolbox?style=for-the-badge&logo=pypi) ![PyPI](https://img.shields.io/pypi/v/linpgtoolbox?style=for-the-badge&logo=pypi) ![PyPI](https://img.shields.io/pypi/dm/linpgtoolbox?style=for-the-badge&logo=pypi)
 
 Linpg-toolbox is a set of tools for managing, compiling, and uploading your own python package. It has been used within Tigeia Workshop for many years and was previously been provided as part of the Linpg Engine. To better accommodate Linpg Engine's frequent iterations work schedule, linpg-toolbox has now been split out and become available as a separate third-party package.
 
@@ -28,12 +28,9 @@ All Linpg Foundation packages, including the Linpg engine and this toolkit, are 
 
 目前，所有Linpg基金会旗下的所有项目，包含但不仅限于Linpg引擎和该工具包本身，都使用了该工具包进行打包：
 
+[linpg-toolbox/builder.py](https://github.com/LinpgFoundation/linpg-toolbox/blob/master/builder.py)
 
-
-[linpg-toolbox/builder.py]: https://github.com/LinpgFoundation/linpg-toolbox/blob/master/builder.py
-[linpg/builder.py]: https://github.com/LinpgFoundation/linpg
-
-
+[linpg/builder.py](https://github.com/LinpgFoundation/linpg/blob/master/builder.py)
 
 In general, you just need to copy and paste the "builder.py" file into your project's directory and modify the parameters a little, and you are good to go.
 
