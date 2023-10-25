@@ -23,13 +23,13 @@ class SmartAutoModuleCombineMode(IntEnum):
 # 搭建和打包文件的系统
 class Builder:
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "_compiler.py")
-    __CACHE_FOLDERS_NEED_REMOVE: Final[list[str]] = [
+    __CACHE_FOLDERS_NEED_REMOVE: Final[tuple[str, ...]] = (
         "dist",
         "Save",
         "build",
         "crash_reports",
         "Cache",
-    ]
+    )
     __DIST_DIR: Final[str] = "dist"
 
     # 移除指定文件夹中的pycache文件夹
@@ -102,10 +102,10 @@ class Builder:
                     _index += 1
             # 如果模块文件夹中只剩__init__.py，则将文件夹转换成一个python文件
             if len(glob(os.path.join(_dir_path, "*"))) <= 1:
-                for _index in range(len(_lines)):
-                    if _lines[_index].lstrip().startswith("from .."):
-                        _lines[_index] = _lines[_index].replace("from ..", "from .")
-                with open(os.path.join(_dir_path + ".py"), "w", encoding="utf-8") as f:
+                for i in range(len(_lines)):
+                    if _lines[i].lstrip().startswith("from .."):
+                        _lines[i] = _lines[i].replace("from ..", "from .")
+                with open(os.path.join(f"{_dir_path}.py"), "w", encoding="utf-8") as f:
                     f.writelines(_lines)
                 shutil.rmtree(_dir_path)
             # 否则则直接将内容写入原__init__.py文件

@@ -1,7 +1,7 @@
 import argparse
 from subprocess import check_call
 
-from linpgtoolbox.builder import Builder, execute_python
+from linpgtoolbox.builder import Builder, PackageInstaller
 from linpgtoolbox.organizer import Organizer
 
 # using argparse to parse the argument from command line
@@ -17,7 +17,7 @@ if str(args.i).lower().startswith("t"):
     Builder.remove("./cython")
     check_call(["git", "clone", "https://github.com/cython/cython.git"])
     check_call(["git", "merge", "origin/patma-preview"], cwd="./cython")
-    execute_python("-m", "pip", "install", ".", "--upgrade", _cwd="./cython")
+    PackageInstaller.install(".", cwd="./cython")
     try:
         Builder.remove("./cython")
     except PermissionError:
