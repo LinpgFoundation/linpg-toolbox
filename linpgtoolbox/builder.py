@@ -207,12 +207,19 @@ class Builder:
         # 根据python_ver以及编译环境重命名
         python_ver: str = f"cp{sys.version_info[0]}{sys.version_info[1]}"
         key_word: str = f"py{sys.version_info[0]}-none-any.whl"
+        _evn: str = (
+            sysconfig.get_platform().replace("-", "_")
+            if sys.platform.startswith("win")
+            else "manylinux2014_x86_64"  # PEP 599
+            if sys.platform.startswith("linux")
+            else "none-any"
+        )
         for _wheel_file in glob(os.path.join(cls.__DIST_DIR, f"*-{key_word}")):
             os.rename(
                 _wheel_file,
                 _wheel_file.replace(
                     key_word,
-                    f"{python_ver}-{python_ver}-{sysconfig.get_platform().replace('-', '_')}.whl",
+                    f"{python_ver}-{python_ver}-{_evn}.whl",
                 ),
             )
 
