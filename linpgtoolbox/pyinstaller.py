@@ -1,13 +1,16 @@
 import os
 import shutil
+from subprocess import check_call
 from typing import Final
+
+from .pkginstaller import PackageInstaller
 
 
 class PyInstaller:
     __FOLDER: Final[str] = "__pyinstaller"
 
     @classmethod
-    def generate(cls, _name: str, _path: str, _hidden_imports: list[str]) -> None:
+    def generate_hook(cls, _name: str, _path: str, _hidden_imports: list[str]) -> None:
         # 确定目标__pyinstaller存放目录
         _path = os.path.join(_path, cls.__FOLDER)
         # 删除旧的目录
@@ -34,3 +37,11 @@ class PyInstaller:
         # 写入数据
         with open(hook_path, "w+", encoding="utf-8") as f:
             f.writelines(lines)
+
+    # pack a project
+    @staticmethod
+    def pack(spec_path: str) -> None:
+        # make sure pyinstaller is installed
+        PackageInstaller.install("pyinstaller")
+        # pack the project
+        check_call(["pyinstaller", spec_path])

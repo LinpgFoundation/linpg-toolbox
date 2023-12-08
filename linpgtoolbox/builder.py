@@ -9,8 +9,7 @@ from tempfile import gettempdir
 from typing import Any, Final
 
 from ._execute import execute_python
-from .pkginstaller import PackageInstaller
-from .pyinstaller import PyInstaller
+from .pyinstaller import PackageInstaller, PyInstaller
 
 
 # 选择智能合并的模式
@@ -172,7 +171,7 @@ class Builder:
         cls.copy(additional_files, source_path_in_target_folder)
         # 写入默认的PyInstaller程序
         if include_pyinstaller_program is True:
-            PyInstaller.generate(
+            PyInstaller.generate_hook(
                 os.path.basename(source_folder),
                 source_path_in_target_folder,
                 builder_options.get("hidden_imports", []),
