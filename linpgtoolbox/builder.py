@@ -178,7 +178,15 @@ class Builder:
                 builder_options.get("hidden_imports", []),
             )
         # 创建py.typed文件
-        with open(os.path.join(source_path_in_target_folder, "py.typed"), "w") as f:
+        with open(
+            os.path.join(
+                source_path_in_target_folder
+                if os.path.exists(source_path_in_target_folder)
+                else target_folder,
+                "py.typed",
+            ),
+            "w",
+        ) as f:
             f.writelines(
                 [
                     "Created by linpg-toolbox according to PEP 561.\n",
