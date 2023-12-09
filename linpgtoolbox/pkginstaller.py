@@ -32,9 +32,10 @@ class PackageInstaller:
     def upgrade(cls, name: str = "*") -> None:
         if name == "*":
             for _, name, _ in pkgutil.iter_modules():
-                try:
-                    cls.install(name)
-                except Exception:
-                    print(f"Warning: fail to update third party package <{name}>")
+                if not name.startswith("_"):
+                    try:
+                        cls.install(name)
+                    except Exception:
+                        print(f"Warning: fail to update third party package <{name}>")
         else:
             cls.install(name)
