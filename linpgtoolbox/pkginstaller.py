@@ -1,4 +1,4 @@
-import pkgutil
+import importlib.metadata
 
 from ._execute import execute_python
 
@@ -31,7 +31,8 @@ class PackageInstaller:
     @classmethod
     def upgrade(cls, name: str = "*") -> None:
         if name == "*":
-            for _, name, _ in pkgutil.iter_modules():
+            for distribution in importlib.metadata.distributions():
+                name = distribution.metadata["Name"]
                 if not name.startswith("_"):
                     try:
                         cls.install(name)
