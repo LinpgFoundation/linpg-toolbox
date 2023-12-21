@@ -1,28 +1,30 @@
 import os
 
-__PATH: str = "%path%"
-__NAME: str = "%name%"
+_PATH: str = "%path%"
+_NAME: str = "%name%"
 
 # no hidden import
 
 datas: list[tuple[str, str]] = []
 ignores: tuple[str, ...] = ("__pyinstaller", "__pycache__", ".git")
 
-for file_name in os.listdir(__PATH):
-    # 文件夹
-    if os.path.isdir(os.path.join(__PATH, file_name)):
-        ignore_this_folder: bool = False
-        for folder_name_t in ignores:
-            if folder_name_t in file_name:
-                ignore_this_folder = True
-                break
-        if not ignore_this_folder:
+
+# check if no ignore key appear in the given file name
+def _does_not_match_any_ignores(_file_name: str) -> bool:
+    for folder_name_t in ignores:
+        if folder_name_t in _file_name:
+            return False
+    return True
+
+
+# append all files/folders into datas
+for file_name in os.listdir(_PATH):
+    # append all folders into datas
+    if os.path.isdir(os.path.join(_PATH, file_name)):
+        if _does_not_match_any_ignores(file_name):
             datas.append(
-                (
-                    os.path.join(__PATH, file_name),
-                    os.path.join(__NAME, file_name),
-                )
+                (os.path.join(_PATH, file_name), os.path.join(_NAME, file_name))
             )
-    # 文件
+    # append all file (except gitignore) into datas
     elif "gitignore" not in file_name:
-        datas.append((os.path.join(__PATH, file_name), os.path.join(__NAME)))
+        datas.append((os.path.join(_PATH, file_name), os.path.join(_NAME)))

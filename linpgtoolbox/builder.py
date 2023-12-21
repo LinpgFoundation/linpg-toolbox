@@ -9,8 +9,7 @@ from tempfile import gettempdir
 from typing import Any, Final
 
 from ._execute import execute_python
-from .pkginstaller import PackageInstaller
-from .pyinstaller import PyInstaller
+from .pyinstaller import PackageInstaller, PyInstaller
 
 
 # 选择智能合并的模式
@@ -172,13 +171,21 @@ class Builder:
         cls.copy(additional_files, source_path_in_target_folder)
         # 写入默认的PyInstaller程序
         if include_pyinstaller_program is True:
-            PyInstaller.generate(
+            PyInstaller.generate_hook(
                 os.path.basename(source_folder),
                 source_path_in_target_folder,
                 builder_options.get("hidden_imports", []),
             )
         # 创建py.typed文件
-        with open(os.path.join(source_path_in_target_folder, "py.typed"), "w") as f:
+        with open(
+            os.path.join(
+                source_path_in_target_folder
+                if os.path.exists(source_path_in_target_folder)
+                else target_folder,
+                "py.typed",
+            ),
+            "w",
+        ) as f:
             f.writelines(
                 [
                     "Created by linpg-toolbox according to PEP 561.\n",

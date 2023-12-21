@@ -1,4 +1,4 @@
-import pkgutil
+import importlib.metadata
 
 from ._execute import execute_python
 
@@ -31,10 +31,12 @@ class PackageInstaller:
     @classmethod
     def upgrade(cls, name: str = "*") -> None:
         if name == "*":
-            for _, name, _ in pkgutil.iter_modules():
-                try:
-                    cls.install(name)
-                except Exception:
-                    print(f"Warning: fail to update third party package <{name}>")
+            for distribution in importlib.metadata.distributions():
+                name = distribution.metadata["Name"]
+                if not name.startswith("_"):
+                    try:
+                        cls.install(name)
+                    except Exception:
+                        print(f"Warning: fail to update third party package <{name}>")
         else:
             cls.install(name)
