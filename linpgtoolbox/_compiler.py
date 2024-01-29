@@ -27,7 +27,7 @@ def _compile_file(
     )
     # 删除c文件
     if not _keep_c:
-        os.remove(_path.replace(".py", ".c"))
+        os.remove(_path[: _path.rfind(".")] + ".c")
     # 生成pyi后缀的typing提示文件
     check_call(
         [
@@ -87,7 +87,9 @@ if __name__ == "__main__":
         @classmethod
         def __generate_process(cls, _path: str) -> None:
             if not os.path.isdir(_path):
-                if _path.endswith(".py") and not cls.__if_ignore(_path):
+                if (
+                    _path.endswith(".py") or _path.endswith(".pyx")
+                ) and not cls.__if_ignore(_path):
                     # 如果使用多线程
                     if _enable_multiprocessing is True:
                         cls.__processes.append(
