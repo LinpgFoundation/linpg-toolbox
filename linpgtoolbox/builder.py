@@ -49,8 +49,10 @@ class Builder:
                 shutil.rmtree(_path) if os.path.isdir(_path) else os.remove(_path)
 
     # 复制文件
-    @staticmethod
-    def copy(files: tuple[str, ...], target_folder: str) -> None:
+    @classmethod
+    def copy(
+        cls, files: tuple[str, ...], target_folder: str, move: bool = False
+    ) -> None:
         for the_file in files:
             # 如果是文件夹
             if os.path.isdir(the_file):
@@ -61,6 +63,8 @@ class Builder:
                 shutil.copy(
                     the_file, os.path.join(target_folder, os.path.basename(the_file))
                 )
+            if move:
+                cls.remove(the_file)
 
     # 删除缓存
     @classmethod
@@ -134,6 +138,8 @@ class Builder:
         os.makedirs(target_folder)
         source_path_in_target_folder: str = os.path.join(target_folder, source_folder)
         shutil.copytree(source_folder, source_path_in_target_folder)
+        # 复制编译需要的文件
+        cls.copy(options.get("includes", tuple()), source_path_in_target_folder)
         # 移除不必要的py缓存
         cls.__remove_cache(source_path_in_target_folder)
         # 如果开启了智能模块合并模式
@@ -165,6 +171,19 @@ class Builder:
         PackageInstaller.install("mypy")
         # 编译源代码
         execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
+        # 复制在错误位置的pyd文件
+        cls.copy(
+            tuple(glob(os.path.join(target_folder, "*.pyd"))),
+            source_path_in_target_folder,
+            True,
+        )
+        # remove include files
+        for included_path in options.get("includes", tuple()):
+            cls.remove(
+                os.path.join(
+                    source_path_in_target_folder, os.path.basename(included_path)
+                )
+            )
         # 删除缓存
         cls.__clean_up()
         # 复制额外文件

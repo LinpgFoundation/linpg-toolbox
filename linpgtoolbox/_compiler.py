@@ -4,7 +4,7 @@ from tempfile import gettempdir
 from typing import Any
 
 # setuptools.setup import不可以在Cython.Build之后
-from setuptools import setup  # type: ignore
+from setuptools import Extension, setup  # type: ignore
 from Cython.Build import cythonize  # type: ignore
 
 
@@ -15,30 +15,47 @@ def _compile_file(
     _keep_c: bool,
     _debug_mode: bool,
     _compiler_directives: dict[str, Any],
+    extra_compile_args: dict[str, list[str]],
 ) -> None:
     setup(
         ext_modules=cythonize(
-            _path,
+            _path
+            if _path.endswith(".py")
+            else [
+                Extension(
+                    os.path.splitext(os.path.basename(_path))[0],
+                    [_path],
+                    extra_compile_args=extra_compile_args.get(
+                        os.path.basename(_path), []
+                    ),
+                )
+            ],
             show_all_warnings=_debug_mode,
             annotate=_debug_mode,
             language_level="3",
             compiler_directives=_compiler_directives,
         )
     )
-    # 删除c文件
+    # 删除c/cpp文件
     if not _keep_c:
-        os.remove(_path[: _path.rfind(".")] + ".c")
+        file_path_without_ext: str = _path[: _path.rfind(".")]
+        os.remove(
+            file_path_without_ext + ".c"
+            if os.path.exists(file_path_without_ext + ".c")
+            else file_path_without_ext + ".cpp"
+        )
     # 生成pyi后缀的typing提示文件
-    check_call(
-        [
-            "stubgen",
-            _path,
-            "-o",
-            os.path.dirname(_source_folder),
-            "--include-docstrings",
-            "--include-private",
-        ]
-    )
+    if _path.endswith(".py"):
+        check_call(
+            [
+                "stubgen",
+                _path,
+                "-o",
+                os.path.dirname(_source_folder),
+                "--include-docstrings",
+                "--include-private",
+            ]
+        )
     # 删除原始py文件
     os.remove(_path)
 
@@ -66,6 +83,10 @@ if __name__ == "__main__":
         _source_folder: str = str(_data["source_folder"])
         # 需要忽略的文件的关键词
         _ignore_key_words: tuple[str, ...] = tuple(_data["ignore_key_words"])
+        # 额外args
+        extra_compile_args: dict[str, list[str]] = dict(
+            _data.get("extra_compile_args", {})
+        )
 
     # 移除参数文件
     os.remove(_data_path)
@@ -101,6 +122,7 @@ if __name__ == "__main__":
                                     _keep_c,
                                     _debug_mode,
                                     _compiler_directives,
+                                    extra_compile_args,
                                 ),
                             )
                         )
@@ -112,6 +134,7 @@ if __name__ == "__main__":
                             _keep_c,
                             _debug_mode,
                             _compiler_directives,
+                            extra_compile_args,
                         )
             elif "pyinstaller" not in _path and "pycache" not in _path:
                 if not cls.__if_ignore(_path):
