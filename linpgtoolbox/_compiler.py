@@ -19,17 +19,19 @@ def _compile_file(
 ) -> None:
     setup(
         ext_modules=cythonize(
-            _path
-            if _path.endswith(".py")
-            else [
-                Extension(
-                    os.path.splitext(os.path.basename(_path))[0],
-                    [_path],
-                    extra_compile_args=extra_compile_args.get(
-                        os.path.basename(_path), []
-                    ),
-                )
-            ],
+            (
+                _path
+                if _path.endswith(".py")
+                else [
+                    Extension(
+                        os.path.splitext(os.path.basename(_path))[0],
+                        [_path],
+                        extra_compile_args=extra_compile_args.get(
+                            os.path.basename(_path), []
+                        ),
+                    )
+                ]
+            ),
             show_all_warnings=_debug_mode,
             annotate=_debug_mode,
             language_level="3",
