@@ -2,9 +2,11 @@ import os
 import shutil
 import sys
 import sysconfig
+from collections import deque
 from enum import IntEnum, auto
 from glob import glob
 from json import dump
+from subprocess import check_call
 from tempfile import gettempdir
 from typing import Any, Final
 
@@ -22,13 +24,14 @@ class SmartAutoModuleCombineMode(IntEnum):
 # 搭建和打包文件的系统
 class Builder:
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "_compiler.py")
-    __CACHE_FOLDERS_NEED_REMOVE: Final[tuple[str, ...]] = (
+    __CACHE_NEED_REMOVE: Final[tuple[str, ...]] = (
         "dist",
         "Save",
         "build",
         "crash_reports",
         "Cache",
     )
+    CACHE_NEED_REMOVE: Final[deque[str]] = deque()
     __DIST_DIR: Final[str] = "dist"
 
     # 移除指定文件夹中的pycache文件夹
@@ -43,14 +46,18 @@ class Builder:
 
     # 如果指定文件夹存在，则移除
     @staticmethod
-    def remove(*path: str) -> None:
+    def remove(*path: str, cwd: str | None = None) -> None:
         for _path in path:
+            if cwd is not None:
+                _path = os.path.join(cwd, _path)
             if os.path.exists(_path):
                 shutil.rmtree(_path) if os.path.isdir(_path) else os.remove(_path)
 
     # 复制文件
-    @staticmethod
-    def copy(files: tuple[str, ...], target_folder: str) -> None:
+    @classmethod
+    def copy(
+        cls, files: tuple[str, ...], target_folder: str, move: bool = False
+    ) -> None:
         for the_file in files:
             # 如果是文件夹
             if os.path.isdir(the_file):
@@ -61,11 +68,13 @@ class Builder:
                 shutil.copy(
                     the_file, os.path.join(target_folder, os.path.basename(the_file))
                 )
+            if move:
+                cls.remove(the_file)
 
     # 删除缓存
     @classmethod
     def __clean_up(cls) -> None:
-        cls.remove(*cls.__CACHE_FOLDERS_NEED_REMOVE)
+        cls.remove(*cls.__CACHE_NEED_REMOVE)
 
     # 合并模块
     @classmethod
@@ -134,6 +143,8 @@ class Builder:
         os.makedirs(target_folder)
         source_path_in_target_folder: str = os.path.join(target_folder, source_folder)
         shutil.copytree(source_folder, source_path_in_target_folder)
+        # 复制编译需要的文件
+        cls.copy(options.get("includes", tuple()), source_path_in_target_folder)
         # 移除不必要的py缓存
         cls.__remove_cache(source_path_in_target_folder)
         # 如果开启了智能模块合并模式
@@ -142,6 +153,33 @@ class Builder:
                 cls.__combine(_path)
         if smart_auto_module_combine is SmartAutoModuleCombineMode.ALL_INTO_ONE:
             cls.__combine(source_path_in_target_folder)
+        # 如果目标文件夹有cmake文件
+        if (
+            os.path.exists(
+                CMakeListsFilePath := os.path.join(
+                    source_path_in_target_folder, "CMakeLists.txt"
+                )
+            )
+            and options.get("auto_cmake", False) is True
+        ):
+            # create a temporary build folder
+            cmake_build_dir: Final[str] = os.path.join(
+                source_path_in_target_folder, "build"
+            )
+            cls.remove(cmake_build_dir)
+            os.makedirs(cmake_build_dir)
+            # make project
+            check_call(["cmake", ".."], cwd=cmake_build_dir)
+            check_call(
+                ["cmake", "--build", ".", "--config", "Release"], cwd=cmake_build_dir
+            )
+            # copy pyd files
+            cls.copy(
+                tuple(glob(os.path.join(cmake_build_dir, "Release", "*.pyd"))),
+                source_path_in_target_folder,
+            )
+            cls.remove(cmake_build_dir)
+            cls.remove(CMakeListsFilePath)
         # 把数据写入缓存文件以供编译器读取
         builder_options: dict[str, Any] = {
             "source_folder": source_path_in_target_folder,
@@ -165,8 +203,22 @@ class Builder:
         PackageInstaller.install("mypy")
         # 编译源代码
         execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
+        # 复制在错误位置的pyd文件
+        cls.copy(
+            tuple(glob(os.path.join(target_folder, "*.pyd"))),
+            source_path_in_target_folder,
+            True,
+        )
+        # remove include files
+        for included_path in options.get("includes", tuple()):
+            cls.remove(
+                os.path.join(
+                    source_path_in_target_folder, os.path.basename(included_path)
+                )
+            )
         # 删除缓存
         cls.__clean_up()
+        cls.remove(*cls.CACHE_NEED_REMOVE, cwd=source_path_in_target_folder)
         # 复制额外文件
         cls.copy(additional_files, source_path_in_target_folder)
         # 写入默认的PyInstaller程序
@@ -179,9 +231,11 @@ class Builder:
         # 创建py.typed文件
         with open(
             os.path.join(
-                source_path_in_target_folder
-                if os.path.exists(source_path_in_target_folder)
-                else target_folder,
+                (
+                    source_path_in_target_folder
+                    if os.path.exists(source_path_in_target_folder)
+                    else target_folder
+                ),
                 "py.typed",
             ),
             "w",
@@ -217,9 +271,11 @@ class Builder:
         _evn: str = (
             sysconfig.get_platform().replace("-", "_")
             if sys.platform.startswith("win")
-            else "manylinux2014_x86_64"  # PEP 599
-            if sys.platform.startswith("linux")
-            else "none-any"
+            else (
+                "manylinux2014_x86_64"  # PEP 599
+                if sys.platform.startswith("linux")
+                else "none-any"
+            )
         )
         for _wheel_file in glob(os.path.join(cls.__DIST_DIR, f"*-{key_word}")):
             os.rename(
