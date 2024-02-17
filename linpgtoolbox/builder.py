@@ -173,9 +173,14 @@ class Builder:
             check_call(
                 ["cmake", "--build", ".", "--config", "Release"], cwd=cmake_build_dir
             )
-            # copy pyd files
+            # copy compiled python files (windows)
             cls.copy(
                 tuple(glob(os.path.join(cmake_build_dir, "Release", "*.pyd"))),
+                source_path_in_target_folder,
+            )
+            # copy compiled python files (linux)
+            cls.copy(
+                tuple(glob(os.path.join(cmake_build_dir, "*.so"))),
                 source_path_in_target_folder,
             )
             cls.remove(cmake_build_dir)
@@ -203,12 +208,6 @@ class Builder:
         PackageInstaller.install("mypy")
         # 编译源代码
         execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
-        # 复制在错误位置的pyd文件
-        cls.copy(
-            tuple(glob(os.path.join(target_folder, "*.pyd"))),
-            source_path_in_target_folder,
-            True,
-        )
         # remove include files
         for included_path in options.get("includes", tuple()):
             cls.remove(
