@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import sys
 import sysconfig
@@ -71,6 +72,30 @@ class Builder:
             if move:
                 cls.remove(the_file)
 
+    # 复制文件夹
+    @classmethod
+    def copy_tree(
+        cls, src: str, dest: str, move: bool = False, ignore_pattern: str = ""
+    ) -> None:
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        for item in os.listdir(src):
+            s: str = os.path.join(src, item)
+            if ignore_pattern and re.search(ignore_pattern, s):
+                continue
+            d: str = os.path.join(dest, item)
+            if os.path.isdir(s):
+                cls.copy_tree(s, d, move, ignore_pattern)
+            else:
+                shutil.copy(s, d)
+            if move:
+                cls.remove(s)
+
+    # 复制Repo
+    @classmethod
+    def copy_repo(cls, src: str, dest: str, move: bool = False) -> None:
+        cls.copy_tree(src, dest, move, ".git")
+
     # 删除缓存
     @classmethod
     def __clean_up(cls) -> None:
@@ -141,10 +166,13 @@ class Builder:
         cls.remove(target_folder)
         # 复制文件到新建的src文件夹中，准备开始编译
         os.makedirs(target_folder)
-        source_path_in_target_folder: str = os.path.join(target_folder, source_folder)
-        shutil.copytree(source_folder, source_path_in_target_folder)
+        source_path_in_target_folder: str = os.path.join(
+            target_folder, os.path.basename(source_folder)
+        )
+        cls.copy_repo(source_folder, source_path_in_target_folder)
         # 复制编译需要的文件
-        cls.copy(options.get("includes", tuple()), source_path_in_target_folder)
+        for p in options.get("includes", tuple()):
+            cls.copy_repo(p, source_path_in_target_folder)
         # 移除不必要的py缓存
         cls.__remove_cache(source_path_in_target_folder)
         # 如果开启了智能模块合并模式
