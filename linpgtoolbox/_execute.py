@@ -3,7 +3,9 @@ from subprocess import check_call
 from typing import Final
 
 _PYTHON_PREFIX: Final[str] = (
-    "python" if sys.platform.startswith("win") else f"python3.{sys.version_info[1]}"
+    f"py -3.{sys.version_info[1]}"
+    if sys.platform.startswith("win")
+    else f"python3.{sys.version_info[1]}"
 )
 
 

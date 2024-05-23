@@ -278,7 +278,7 @@ class Builder:
             # 移除旧的build
             PackageInstaller.uninstall(os.path.basename(source_folder))
             # 安装新的build
-            PackageInstaller.install(".", user=True)
+            PackageInstaller.install(".")
         # 删除build文件夹
         if remove_building_cache is True:
             cls.remove("build")
