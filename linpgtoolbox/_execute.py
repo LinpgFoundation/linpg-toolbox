@@ -1,13 +1,9 @@
 import sys
 from subprocess import check_call
-from typing import Final
-
-_PYTHON_PREFIX: Final[str] = (
-    f"py -3.{sys.version_info[1]}"
-    if sys.platform.startswith("win")
-    else f"python3.{sys.version_info[1]}"
-)
 
 
 def execute_python(*cmd: str, cwd: str | None = None) -> None:
-    check_call([_PYTHON_PREFIX, *cmd], cwd=cwd)
+    if sys.platform.startswith("win"):
+        check_call(["py", f"-3.{sys.version_info.minor}", *cmd], cwd=cwd)
+    else:
+        check_call([f"python3.{sys.version_info.minor}", *cmd], cwd=cwd)
