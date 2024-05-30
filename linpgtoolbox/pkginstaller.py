@@ -7,19 +7,12 @@ class PackageInstaller:
     # 安装（第三方）库
     @classmethod
     def install(
-        cls,
-        pkg_name: str,
-        upgrade: bool = True,
-        user: bool = False,
-        cwd: str | None = None,
+        cls, pkg_name: str, upgrade: bool = True, cwd: str | None = None
     ) -> None:
         _cmd: list[str] = ["-m", "pip", "install", pkg_name]
         # 确保安装最新的版本
         if upgrade is True:
             _cmd.append("--upgrade")
-        # 只为用户安装
-        if user is True:
-            _cmd.append("--user")
         execute_python(*_cmd, cwd=cwd)
 
     # 卸载（第三方）库

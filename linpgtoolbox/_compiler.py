@@ -1,7 +1,8 @@
 import os
-from subprocess import check_call
 from tempfile import gettempdir
 from typing import Any
+
+import mypy.stubgen
 
 # setuptools.setup import不可以在Cython.Build之后
 from setuptools import Extension, setup  # type: ignore
@@ -48,9 +49,8 @@ def _compile_file(
         )
     # 生成pyi后缀的typing提示文件
     if _path.endswith(".py"):
-        check_call(
+        mypy.stubgen.main(
             [
-                "stubgen",
                 _path,
                 "-o",
                 os.path.dirname(_source_folder),
