@@ -3,13 +3,14 @@ import re
 import shutil
 import sys
 import sysconfig
+import tomllib
 from collections import deque
 from enum import IntEnum, auto
 from glob import glob
 from json import dump
 from subprocess import check_call
 from tempfile import gettempdir
-from typing import Any, Final
+from typing import Any, Final, Iterable
 
 from ._execute import execute_python
 from .pyinstaller import PackageInstaller, PyInstaller
@@ -17,9 +18,9 @@ from .pyinstaller import PackageInstaller, PyInstaller
 
 # 选择智能合并的模式
 class SmartAutoModuleCombineMode(IntEnum):
-    DISABLE: Final[int] = auto()
-    FOLDER_ONLY: Final[int] = auto()
-    ALL_INTO_ONE: Final[int] = auto()
+    DISABLE: int = auto()
+    FOLDER_ONLY: int = auto()
+    ALL_INTO_ONE: int = auto()
 
 
 # 搭建和打包文件的系统
@@ -152,16 +153,15 @@ class Builder:
         cls,
         source_folder: str,
         target_folder: str = "src",
-        additional_files: tuple[str, ...] = tuple(),
-        ignore_key_words: tuple[str, ...] = tuple(),
         smart_auto_module_combine: SmartAutoModuleCombineMode = SmartAutoModuleCombineMode.DISABLE,
         remove_building_cache: bool = True,
         update_the_one_in_sitepackages: bool = False,
         include_pyinstaller_program: bool = False,
-        options: dict[str, Any] = {},
+        show_success_prompt: bool = True,
     ) -> None:
-        # 确保setuptools安装
+        # make sure required libraries are installed
         PackageInstaller.install("setuptools")
+        PackageInstaller.install("cython")
         # 移除cache
         cls.remove(target_folder)
         # 复制文件到新建的src文件夹中，准备开始编译
@@ -170,9 +170,16 @@ class Builder:
             target_folder, os.path.basename(source_folder)
         )
         cls.copy_repo(source_folder, source_path_in_target_folder)
-        # 复制编译需要的文件
-        for p in options.get("includes", tuple()):
-            cls.copy_repo(p, source_path_in_target_folder)
+        # load config for linpgtoolbox
+        pyproject_path: Final[str] = os.path.join(
+            os.path.dirname(source_folder), "pyproject.toml"
+        )
+        _config: dict[str, Iterable] = {}
+        _options: dict[str, Any] = {}
+        if os.path.exists(pyproject_path):
+            with open(pyproject_path, "rb") as f:
+                _config.update(tomllib.load(f).get("tool", {}).get("linpgtoolbox", {}))
+                _options.update(_config.get("options", {}))
         # 移除不必要的py缓存
         cls.__remove_cache(source_path_in_target_folder)
         # 如果开启了智能模块合并模式
@@ -188,7 +195,7 @@ class Builder:
                     source_path_in_target_folder, "CMakeLists.txt"
                 )
             )
-            and options.get("auto_cmake", False) is True
+            and _options.get("auto_cmake", False) is True
         ):
             # create a temporary build folder
             cmake_build_dir: Final[str] = os.path.join(
@@ -216,14 +223,14 @@ class Builder:
         # 把数据写入缓存文件以供编译器读取
         builder_options: dict[str, Any] = {
             "source_folder": source_path_in_target_folder,
-            "ignore_key_words": ignore_key_words,
+            "ignores": _config.get("ignores", tuple()),
             "enable_multiprocessing": True,
             "debug_mode": False,
             "emit_code_comments": False,
             "keep_c": False,
             "compiler_directives": {},
         }
-        builder_options.update(options)
+        builder_options.update(_options)
         with open(
             os.path.join(
                 gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
@@ -237,7 +244,7 @@ class Builder:
         # 编译源代码
         execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
         # remove include files
-        for included_path in options.get("includes", tuple()):
+        for included_path in _config.get("includes", tuple()):
             cls.remove(
                 os.path.join(
                     source_path_in_target_folder, os.path.basename(included_path)
@@ -247,7 +254,8 @@ class Builder:
         cls.__clean_up()
         cls.remove(*cls.CACHE_NEED_REMOVE, cwd=source_path_in_target_folder)
         # 复制额外文件
-        cls.copy(additional_files, source_path_in_target_folder)
+        print(_config.get("includes", tuple()))
+        cls.copy(_config.get("includes", tuple()), source_path_in_target_folder)
         # 写入默认的PyInstaller程序
         if include_pyinstaller_program is True:
             PyInstaller.generate_hook(
@@ -282,6 +290,13 @@ class Builder:
         # 删除build文件夹
         if remove_building_cache is True:
             cls.remove("build")
+        # 提示编译完成
+        if show_success_prompt:
+            for _ in range(2):
+                print("")
+            print("--------------------Done!--------------------")
+            for _ in range(2):
+                print("")
 
     # 构建最新的release
     @classmethod
@@ -330,3 +345,9 @@ class Builder:
             execute_python("-m", "twine", "upload", f"{cls.__DIST_DIR}/*")
         # 删除缓存
         cls.__clean_up()
+
+    # build project and upload
+    @classmethod
+    def publish(cls, confirm: bool = True) -> None:
+        cls.build(False)
+        cls.upload(confirm)

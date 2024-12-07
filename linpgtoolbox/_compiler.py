@@ -1,5 +1,4 @@
 import os
-from tempfile import gettempdir
 from typing import Any
 
 import mypy.stubgen
@@ -64,8 +63,10 @@ def _compile_file(
 
 if __name__ == "__main__":
     import json
+    import re
     from glob import glob
     from multiprocessing import Process
+    from tempfile import gettempdir
 
     # 加载全局参数
     _data_path: str = os.path.join(
@@ -84,7 +85,7 @@ if __name__ == "__main__":
         # 储存源代码的文件的路径
         _source_folder: str = str(_data["source_folder"])
         # 需要忽略的文件的关键词
-        _ignore_key_words: tuple[str, ...] = tuple(_data["ignore_key_words"])
+        _ignores: tuple[str, ...] = tuple(_data["ignores"])
         # 额外args
         extra_compile_args: dict[str, list[str]] = dict(
             _data.get("extra_compile_args", {})
@@ -101,8 +102,8 @@ if __name__ == "__main__":
         # 是否忽略文件
         @classmethod
         def __if_ignore(cls, _path: str) -> bool:
-            for key_word in _ignore_key_words:
-                if key_word in _path:
+            for _ignore in _ignores:
+                if re.match(_ignore, _path) is not None:
                     return True
             return False
 

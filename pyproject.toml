@@ -1,47 +1,60 @@
 [build-system]
+build-backend = "setuptools.build_meta"
 requires = [
     "setuptools>=64",
     "wheel"
 ]
-build-backend = "setuptools.build_meta"
 
 [project]
-name = "linpgtoolbox"
-version = "24.06"
 authors = [
-    {name = "Linpg Foundation", email = "yudong9912@gmail.com"},
+    {email = "yudong9912@gmail.com", name = "Linpg Foundation"}
 ]
-description = "A set of tools for managing, compiling, and uploading your own package."
-readme = "README.md"
-requires-python = ">=3.10"
 classifiers = [
-    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython"
 ]
-license = {file = "LICENSE"}
 dependencies = ["mypy"]
+description = "A set of tools for managing, compiling, and uploading your own package."
+license = {file = "LICENSE"}
+name = "linpgtoolbox"
+readme = "README.md"
+requires-python = ">=3.11"
+version = "24.12"
 
 [project.urls]
-"Homepage" = "https://github.com/LinpgFoundation/linpg-toolbox"
 "Bug Tracker" = "https://github.com/LinpgFoundation/linpg-toolbox/issues"
-
-[tool.mypy]
-python_version = "3.12"
-disallow_any_generics = true
-disallow_untyped_defs = true
-disallow_untyped_calls = true
-warn_return_any = true
-warn_redundant_casts = true
-warn_unreachable = true
+"Homepage" = "https://github.com/LinpgFoundation/linpg-toolbox"
 
 [tool.black]
-target-version = ['py312']
+target-version = ['py313']
+
+[tool.linpgtoolbox]
+ignores = [".*_compiler\\.py$"]
+includes = [
+    "CODE_OF_CONDUCT.md",
+    "LICENSE",
+    "README.md"
+]
+
+[tool.mypy]
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+python_version = "3.12"
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+
+[tool.setuptools.package-data]
+"*" = ["*"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-"*" = ["*"]
+[tool.tomlsort]
+all = true
+in_place = true
+spaces_indent_inline_array = 4
