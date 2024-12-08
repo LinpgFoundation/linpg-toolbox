@@ -5,22 +5,14 @@ import sys
 import sysconfig
 import tomllib
 from collections import deque
-from enum import IntEnum, auto
 from glob import glob
 from json import dump
 from subprocess import check_call
 from tempfile import gettempdir
-from typing import Any, Final, Iterable
+from typing import Any, Final
 
 from ._execute import execute_python
 from .pyinstaller import PackageInstaller, PyInstaller
-
-
-# 选择智能合并的模式
-class SmartAutoModuleCombineMode(IntEnum):
-    DISABLE: int = auto()
-    FOLDER_ONLY: int = auto()
-    ALL_INTO_ONE: int = auto()
 
 
 # 搭建和打包文件的系统
@@ -153,11 +145,9 @@ class Builder:
         cls,
         source_folder: str,
         target_folder: str = "src",
-        smart_auto_module_combine: SmartAutoModuleCombineMode = SmartAutoModuleCombineMode.DISABLE,
-        remove_building_cache: bool = True,
-        update_the_one_in_sitepackages: bool = False,
-        include_pyinstaller_program: bool = False,
-        show_success_prompt: bool = True,
+        remove_build_cache: bool = True,
+        upgrade: bool = False,
+        show_success_message: bool = True,
     ) -> None:
         # make sure required libraries are installed
         PackageInstaller.install("setuptools")
@@ -174,7 +164,7 @@ class Builder:
         pyproject_path: Final[str] = os.path.join(
             os.path.dirname(source_folder), "pyproject.toml"
         )
-        _config: dict[str, Iterable] = {}
+        _config: dict[str, Any] = {}
         _options: dict[str, Any] = {}
         if os.path.exists(pyproject_path):
             with open(pyproject_path, "rb") as f:
@@ -183,10 +173,13 @@ class Builder:
         # 移除不必要的py缓存
         cls.__remove_cache(source_path_in_target_folder)
         # 如果开启了智能模块合并模式
-        if smart_auto_module_combine is not SmartAutoModuleCombineMode.DISABLE:
+        smart_auto_module_combine: str = _options.get(
+            "smart_auto_module_combine", "disable"
+        )
+        if smart_auto_module_combine != "disable":
             for _path in glob(os.path.join(source_path_in_target_folder, "*")):
                 cls.__combine(_path)
-        if smart_auto_module_combine is SmartAutoModuleCombineMode.ALL_INTO_ONE:
+        if smart_auto_module_combine == "all_in_one":
             cls.__combine(source_path_in_target_folder)
         # 如果目标文件夹有cmake文件
         if (
@@ -254,10 +247,9 @@ class Builder:
         cls.__clean_up()
         cls.remove(*cls.CACHE_NEED_REMOVE, cwd=source_path_in_target_folder)
         # 复制额外文件
-        print(_config.get("includes", tuple()))
-        cls.copy(_config.get("includes", tuple()), source_path_in_target_folder)
+        cls.copy(tuple(_config.get("includes", tuple())), source_path_in_target_folder)
         # 写入默认的PyInstaller程序
-        if include_pyinstaller_program is True:
+        if _config.get("include_pyinstaller", False) is True:
             PyInstaller.generate_hook(
                 os.path.basename(source_folder),
                 source_path_in_target_folder,
@@ -282,16 +274,16 @@ class Builder:
                 ]
             )
         # 删除在sitepackages中的旧build，同时复制新的build
-        if update_the_one_in_sitepackages is True:
+        if upgrade is True:
             # 移除旧的build
             PackageInstaller.uninstall(os.path.basename(source_folder))
             # 安装新的build
             PackageInstaller.install(".")
         # 删除build文件夹
-        if remove_building_cache is True:
+        if remove_build_cache is True:
             cls.remove("build")
         # 提示编译完成
-        if show_success_prompt:
+        if show_success_message:
             for _ in range(2):
                 print("")
             print("--------------------Done!--------------------")
@@ -300,7 +292,7 @@ class Builder:
 
     # 构建最新的release
     @classmethod
-    def build(cls) -> None:
+    def pack(cls) -> None:
         # 升级build工具
         PackageInstaller.install("build")
         # 升级wheel工具
@@ -328,7 +320,7 @@ class Builder:
                 ),
             )
 
-    # 打包上传最新的文件
+    # upload the packaged project
     @classmethod
     def upload(cls, confirm: bool = True) -> None:
         # 要求用户确认dist文件夹中的打包好的文件之后在继续
@@ -346,8 +338,8 @@ class Builder:
         # 删除缓存
         cls.__clean_up()
 
-    # build project and upload
+    # pack and upload project
     @classmethod
-    def publish(cls, confirm: bool = True) -> None:
-        cls.build(False)
+    def release(cls, confirm: bool = True) -> None:
+        cls.pack()
         cls.upload(confirm)

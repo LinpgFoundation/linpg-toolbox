@@ -24,6 +24,9 @@ readme = "README.md"
 requires-python = ">=3.11"
 version = "24.12"
 
+[project.scripts]
+linpgtb = "linpgtoolbox.cli:cli"
+
 [project.urls]
 "Bug Tracker" = "https://github.com/LinpgFoundation/linpg-toolbox/issues"
 "Homepage" = "https://github.com/LinpgFoundation/linpg-toolbox"
