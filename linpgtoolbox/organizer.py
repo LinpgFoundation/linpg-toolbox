@@ -1,7 +1,12 @@
+import os
+
+
 class Organizer:
     # organize gitignore
     @staticmethod
-    def organize_gitignore(_path: str = ".gitignore") -> None:
+    def organize_gitignore(_path: str = ".", filename: str = ".gitignore") -> None:
+        # join path
+        _path = os.path.join(_path, filename)
         # check if target file is a gitignore file
         if not _path.endswith(".gitignore"):
             raise FileNotFoundError("The file has to be gitignore!")

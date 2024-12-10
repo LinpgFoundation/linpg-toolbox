@@ -87,7 +87,7 @@ class Builder:
     # 复制Repo
     @classmethod
     def copy_repo(cls, src: str, dest: str, move: bool = False) -> None:
-        cls.copy_tree(src, dest, move, ".git")
+        cls.copy_tree(src, dest, move, ".*.git$")
 
     # 删除缓存
     @classmethod
@@ -171,7 +171,7 @@ class Builder:
                 _config.update(tomllib.load(f).get("tool", {}).get("linpgtoolbox", {}))
                 _options.update(_config.get("options", {}))
         # 移除不必要的py缓存
-        cls.__remove_cache(source_path_in_target_folder)
+        cls.__remove_cache(target_folder)
         # 如果开启了智能模块合并模式
         smart_auto_module_combine: str = _options.get(
             "smart_auto_module_combine", "disable"
