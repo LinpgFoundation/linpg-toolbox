@@ -4,6 +4,7 @@ import tomllib
 
 from .builder import Builder
 from .organizer import Organizer
+from .pkginstaller import PackageInstaller
 
 
 def _get_project_name(path: str) -> str:
@@ -12,7 +13,7 @@ def _get_project_name(path: str) -> str:
     if not os.path.exists("pyproject.toml"):
         raise FileNotFoundError("Cannot find pyproject.toml!")
     with open("pyproject.toml", "rb") as f:
-        return tomllib.load(f)["project"]["name"]
+        return str(tomllib.load(f)["project"]["name"])
 
 
 def cli() -> None:
@@ -28,6 +29,7 @@ def cli() -> None:
         "--release", "-r", type=str, help="Pack and upload project to PyPi"
     )
     parser.add_argument("--organize", "-o", type=str, help="Organize project")
+    parser.add_argument("--upgrade", type=str, help="Upgrade a pip package")
     # get arguments
     args = parser.parse_args()
     # eacute operations
@@ -44,3 +46,5 @@ def cli() -> None:
         Builder.release()
     elif args.organize:
         Organizer.organize_gitignore(args.organize)
+    elif args.upgrade:
+        PackageInstaller.upgrade(args.upgrade)

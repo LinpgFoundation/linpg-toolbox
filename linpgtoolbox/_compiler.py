@@ -102,10 +102,7 @@ if __name__ == "__main__":
         # 是否忽略文件
         @classmethod
         def __if_ignore(cls, _path: str) -> bool:
-            for _ignore in _ignores:
-                if re.match(_ignore, _path) is not None:
-                    return True
-            return False
+            return any(re.match(pattern, _path) for pattern in _ignores)
 
         # 创建编译进程
         @classmethod

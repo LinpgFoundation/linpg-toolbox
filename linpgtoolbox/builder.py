@@ -268,10 +268,10 @@ class Builder:
             "w",
         ) as f:
             f.writelines(
-                [
+                (
                     "Created by linpg-toolbox according to PEP 561.\n",
                     "More information can be found here: https://peps.python.org/pep-0561/\n",
-                ]
+                )
             )
         # 删除在sitepackages中的旧build，同时复制新的build
         if upgrade is True:

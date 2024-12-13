@@ -38,7 +38,7 @@ class PyInstaller:
         with open(hook_path, "w+", encoding="utf-8") as f:
             f.writelines(lines)
 
-    # pack a project
+    # pack a project using pyinstaller
     @staticmethod
     def pack(spec_path: str) -> None:
         # make sure pyinstaller is installed
