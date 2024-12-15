@@ -18,7 +18,6 @@ The toolkit contains the following classes / 工具包包含以下程序:
 | Organizer        | A organizing tool that organizes your gitignore file(s).     | 整理工具，可以整理你的gitignore文件。       |
 | PackageInstaller | A simple tool to install, upgrade and uninstall third-party python package(s). | 第三方python库安装以及卸载工具。            |
 | PyInstaller      | Generate a PyInstaller hook for your personal package.       | 为你的个人库快速生成一个PyInstaller的钩子。 |
-| Zipper           | Pack and file(s) and directory(s) into a zip according to the linpg.zs script file. | 根据linpg.zs脚本打包文件和数据。            |
 
 
 
