@@ -21,12 +21,12 @@ def cli() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--compile", "-c", type=str, help="Compile project")
     parser.add_argument("--install", "-i", type=str, help="Install project")
-    parser.add_argument("--pack", "-p", type=str, help="Pack project")
+    parser.add_argument("--pack", "-p", action="store_true", help="Pack project")
     parser.add_argument(
-        "--upload", "-u", type=str, help="Upload packed project to PyPi"
+        "--upload", action="store_true", help="Upload packed project to PyPi"
     )
     parser.add_argument(
-        "--release", "-r", type=str, help="Pack and upload project to PyPi"
+        "--release", "-r", action="store_true", help="Pack and upload project to PyPi"
     )
     parser.add_argument("--organize", "-o", type=str, help="Organize project")
     parser.add_argument("--upgrade", type=str, help="Upgrade a pip package")
@@ -41,10 +41,14 @@ def cli() -> None:
     elif args.pack:
         Builder.pack()
     elif args.upload:
-        Builder.upload()
+        Builder.upload(False)
     elif args.release:
         Builder.release()
     elif args.organize:
         Organizer.organize_gitignore(args.organize)
     elif args.upgrade:
         PackageInstaller.upgrade(args.upgrade)
+
+
+if __name__ == "__main__":
+    cli()

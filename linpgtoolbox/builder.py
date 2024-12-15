@@ -28,16 +28,6 @@ class Builder:
     CACHE_NEED_REMOVE: Final[deque[str]] = deque()
     __DIST_DIR: Final[str] = "dist"
 
-    # 移除指定文件夹中的pycache文件夹
-    @classmethod
-    def __remove_cache(cls, path: str) -> None:
-        for file_path in glob(os.path.join(path, "*")):
-            if os.path.isdir(file_path):
-                if "pycache" in file_path or "mypy_cache" in file_path:
-                    shutil.rmtree(file_path)
-                else:
-                    cls.__remove_cache(file_path)
-
     # 如果指定文件夹存在，则移除
     @staticmethod
     def remove(*path: str, cwd: str | None = None) -> None:
@@ -64,30 +54,6 @@ class Builder:
                 )
             if move:
                 cls.remove(the_file)
-
-    # 复制文件夹
-    @classmethod
-    def copy_tree(
-        cls, src: str, dest: str, move: bool = False, ignore_pattern: str = ""
-    ) -> None:
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-        for item in os.listdir(src):
-            s: str = os.path.join(src, item)
-            if ignore_pattern and re.search(ignore_pattern, s):
-                continue
-            d: str = os.path.join(dest, item)
-            if os.path.isdir(s):
-                cls.copy_tree(s, d, move, ignore_pattern)
-            else:
-                shutil.copy(s, d)
-            if move:
-                cls.remove(s)
-
-    # 复制Repo
-    @classmethod
-    def copy_repo(cls, src: str, dest: str, move: bool = False) -> None:
-        cls.copy_tree(src, dest, move, ".*.git$")
 
     # 删除缓存
     @classmethod
@@ -145,7 +111,6 @@ class Builder:
         cls,
         source_folder: str,
         target_folder: str = "src",
-        remove_build_cache: bool = True,
         upgrade: bool = False,
         show_success_message: bool = True,
     ) -> None:
@@ -159,7 +124,12 @@ class Builder:
         source_path_in_target_folder: str = os.path.join(
             target_folder, os.path.basename(source_folder)
         )
-        cls.copy_repo(source_folder, source_path_in_target_folder)
+        # copy repo to detonation folder
+        shutil.copytree(
+            source_folder,
+            source_path_in_target_folder,
+            ignore=shutil.ignore_patterns(".git", "__pycache__", ".mypy_cache"),
+        )
         # load config for linpgtoolbox
         pyproject_path: Final[str] = os.path.join(
             os.path.dirname(source_folder), "pyproject.toml"
@@ -170,8 +140,6 @@ class Builder:
             with open(pyproject_path, "rb") as f:
                 _config.update(tomllib.load(f).get("tool", {}).get("linpgtoolbox", {}))
                 _options.update(_config.get("options", {}))
-        # 移除不必要的py缓存
-        cls.__remove_cache(target_folder)
         # 如果开启了智能模块合并模式
         smart_auto_module_combine: str = _options.get(
             "smart_auto_module_combine", "disable"
@@ -221,7 +189,6 @@ class Builder:
             "debug_mode": False,
             "emit_code_comments": False,
             "keep_c": False,
-            "compiler_directives": {},
         }
         builder_options.update(_options)
         with open(
@@ -249,7 +216,7 @@ class Builder:
         # 复制额外文件
         cls.copy(tuple(_config.get("includes", tuple())), source_path_in_target_folder)
         # 写入默认的PyInstaller程序
-        if _config.get("include_pyinstaller", False) is True:
+        if _options.get("include_pyinstaller", False) is True:
             PyInstaller.generate_hook(
                 os.path.basename(source_folder),
                 source_path_in_target_folder,
@@ -280,8 +247,7 @@ class Builder:
             # 安装新的build
             PackageInstaller.install(".")
         # 删除build文件夹
-        if remove_build_cache is True:
-            cls.remove("build")
+        cls.remove("build")
         # 提示编译完成
         if show_success_message:
             for _ in range(2):
@@ -340,6 +306,6 @@ class Builder:
 
     # pack and upload project
     @classmethod
-    def release(cls, confirm: bool = True) -> None:
+    def release(cls) -> None:
         cls.pack()
-        cls.upload(confirm)
+        cls.upload()
