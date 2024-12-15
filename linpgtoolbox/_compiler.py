@@ -1,5 +1,4 @@
 import os
-from tempfile import gettempdir
 from typing import Any
 
 import mypy.stubgen
@@ -15,7 +14,6 @@ def _compile_file(
     _path: str,
     _keep_c: bool,
     _debug_mode: bool,
-    _compiler_directives: dict[str, Any],
     extra_compile_args: dict[str, list[str]],
 ) -> None:
     setup(
@@ -36,7 +34,6 @@ def _compile_file(
             show_all_warnings=_debug_mode,
             annotate=_debug_mode,
             language_level="3",
-            compiler_directives=_compiler_directives,
         )
     )
     # 删除c/cpp文件
@@ -64,8 +61,10 @@ def _compile_file(
 
 if __name__ == "__main__":
     import json
+    import re
     from glob import glob
     from multiprocessing import Process
+    from tempfile import gettempdir
 
     # 加载全局参数
     _data_path: str = os.path.join(
@@ -77,14 +76,12 @@ if __name__ == "__main__":
         _debug_mode: bool = bool(_data["debug_mode"])
         # 是否保存c文件
         _keep_c: bool = bool(_data["keep_c"])
-        # 其他次要参数
-        _compiler_directives: dict[str, Any] = dict(_data["compiler_directives"])
         # 是否启用多线程
         _enable_multiprocessing: bool = bool(_data["enable_multiprocessing"])
         # 储存源代码的文件的路径
         _source_folder: str = str(_data["source_folder"])
         # 需要忽略的文件的关键词
-        _ignore_key_words: tuple[str, ...] = tuple(_data["ignore_key_words"])
+        _ignores: tuple[str, ...] = tuple(_data["ignores"])
         # 额外args
         extra_compile_args: dict[str, list[str]] = dict(
             _data.get("extra_compile_args", {})
@@ -101,10 +98,7 @@ if __name__ == "__main__":
         # 是否忽略文件
         @classmethod
         def __if_ignore(cls, _path: str) -> bool:
-            for key_word in _ignore_key_words:
-                if key_word in _path:
-                    return True
-            return False
+            return any(re.match(pattern, _path) for pattern in _ignores)
 
         # 创建编译进程
         @classmethod
@@ -123,7 +117,6 @@ if __name__ == "__main__":
                                     _path,
                                     _keep_c,
                                     _debug_mode,
-                                    _compiler_directives,
                                     extra_compile_args,
                                 ),
                             )
@@ -135,7 +128,6 @@ if __name__ == "__main__":
                             _path,
                             _keep_c,
                             _debug_mode,
-                            _compiler_directives,
                             extra_compile_args,
                         )
             elif "pyinstaller" not in _path and "pycache" not in _path:
