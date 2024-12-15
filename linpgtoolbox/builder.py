@@ -18,13 +18,7 @@ from .pyinstaller import PackageInstaller, PyInstaller
 # 搭建和打包文件的系统
 class Builder:
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "_compiler.py")
-    __CACHE_NEED_REMOVE: Final[tuple[str, ...]] = (
-        "dist",
-        "Save",
-        "build",
-        "crash_reports",
-        "Cache",
-    )
+    __CACHE_NEED_REMOVE: Final[tuple[str, ...]] = ("dist", "build")
     CACHE_NEED_REMOVE: Final[deque[str]] = deque()
     __DIST_DIR: Final[str] = "dist"
 
@@ -112,6 +106,7 @@ class Builder:
         source_folder: str,
         target_folder: str = "src",
         upgrade: bool = False,
+        skip_compile: bool = False,
         show_success_message: bool = True,
     ) -> None:
         # make sure required libraries are installed
@@ -181,38 +176,35 @@ class Builder:
             )
             cls.remove(cmake_build_dir)
             cls.remove(CMakeListsFilePath)
-        # 把数据写入缓存文件以供编译器读取
-        builder_options: dict[str, Any] = {
-            "source_folder": source_path_in_target_folder,
-            "ignores": _config.get("ignores", tuple()),
-            "enable_multiprocessing": True,
-            "debug_mode": False,
-            "emit_code_comments": False,
-            "keep_c": False,
-        }
-        builder_options.update(_options)
-        with open(
-            os.path.join(
-                gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
-            ),
-            "w",
-            encoding="utf-8",
-        ) as f:
-            dump(builder_options, f)
-        # 确保mypy已经安装
-        PackageInstaller.install("mypy")
-        # 编译源代码
-        execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
-        # remove include files
-        for included_path in _config.get("includes", tuple()):
-            cls.remove(
+
+        if not skip_compile:
+            # 把数据写入缓存文件以供编译器读取
+            builder_options: dict[str, Any] = {
+                "source_folder": source_path_in_target_folder,
+                "ignores": _config.get("ignores", tuple()),
+                "enable_multiprocessing": True,
+                "debug_mode": False,
+                "emit_code_comments": False,
+                "keep_c": False,
+                "skip_compile": skip_compile,
+            }
+            builder_options.update(_options)
+            with open(
                 os.path.join(
-                    source_path_in_target_folder, os.path.basename(included_path)
-                )
-            )
-        # 删除缓存
-        cls.__clean_up()
-        cls.remove(*cls.CACHE_NEED_REMOVE, cwd=source_path_in_target_folder)
+                    gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
+                ),
+                "w",
+                encoding="utf-8",
+            ) as f:
+                dump(builder_options, f)
+            # 确保mypy已经安装
+            PackageInstaller.install("mypy")
+            # 编译源代码
+            execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
+            # 删除缓存
+            cls.__clean_up()
+            cls.remove(*cls.CACHE_NEED_REMOVE, cwd=source_path_in_target_folder)
+
         # 复制额外文件
         cls.copy(tuple(_config.get("includes", tuple())), source_path_in_target_folder)
         # 写入默认的PyInstaller程序
@@ -258,13 +250,16 @@ class Builder:
 
     # 构建最新的release
     @classmethod
-    def pack(cls) -> None:
+    def pack(cls, os_specific: bool = True) -> None:
         # 升级build工具
         PackageInstaller.install("build")
         # 升级wheel工具
         PackageInstaller.install("wheel")
         # 打包文件
         execute_python("-m", "build", "--no-isolation")
+        # if the project is not os specific, then rename are not needed
+        if not os_specific:
+            return
         # 根据python_ver以及编译环境重命名
         python_ver: str = f"cp{sys.version_info[0]}{sys.version_info[1]}"
         key_word: str = f"py{sys.version_info[0]}-none-any.whl"
