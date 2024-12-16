@@ -1,5 +1,4 @@
 import os
-import re
 import shutil
 import sys
 import sysconfig
@@ -212,7 +211,7 @@ class Builder:
             PyInstaller.generate_hook(
                 os.path.basename(source_folder),
                 source_path_in_target_folder,
-                builder_options.get("hidden_imports", []),
+                _config.get("hidden_imports", []),
             )
         # 创建py.typed文件
         with open(
@@ -304,3 +303,83 @@ class Builder:
     def release(cls) -> None:
         cls.pack()
         cls.upload()
+
+    @classmethod
+    def build_all(
+        cls, path: str, py_ver_minor_max: int = 13, py_ver_minor_min: int = 11
+    ) -> None:
+        # the name of the parent folder
+        _FOLDER_NAME: str = os.path.basename(path)
+        # the dist folder
+        _DIST_DIR: str = os.path.join(os.path.dirname(path), "dist")
+        # a temporary folder for storing a copy
+        _CACHE_PATH: str = os.path.join(_DIST_DIR, _FOLDER_NAME)
+
+        # creating a copy for operations
+        if os.path.exists(_DIST_DIR):
+            shutil.rmtree(_DIST_DIR)
+        shutil.copytree(
+            os.path.join(path, ".."),
+            _CACHE_PATH,
+            ignore=shutil.ignore_patterns(
+                ".git", "__pycache__", ".mypy_cache", "docker", ".github", ".vscode"
+            ),
+        )
+
+        # only support python 3.11 -> 3.13
+        for i in range(py_ver_minor_min, py_ver_minor_max + 1):
+            # create a docker file for current python version
+            with open(
+                os.path.join(os.path.dirname(__file__), "__docker", "Dockerfile"), "r"
+            ) as f:
+                _content: str = f.read()
+            _content = _content.replace("PYTHON_VERSION_MINOR", str(i)).replace(
+                "PROJECT_NAME", _FOLDER_NAME
+            )
+            dockerfile_new_filename: str = f"Dockerfile_3{i}"
+            dockerfile_new_path: str = os.path.join(_DIST_DIR, dockerfile_new_filename)
+            with open(dockerfile_new_path, "w") as f:
+                f.write(_content)
+
+            # run the image to obtain compiled linux package
+            IMAGE_NAME: str = f"{_FOLDER_NAME}-image-{i}"
+            check_call(
+                (
+                    "docker",
+                    "build",
+                    "-t",
+                    IMAGE_NAME,
+                    "-f",
+                    dockerfile_new_filename,
+                    ".",
+                ),
+                cwd=_DIST_DIR,
+            )
+            check_call(("docker", "run", "--name", IMAGE_NAME, IMAGE_NAME))
+            check_call(
+                ("docker", "cp", f"{IMAGE_NAME}:/app/{_FOLDER_NAME}/dist", "../"),
+                cwd=_DIST_DIR,
+            )
+            check_call(("docker", "rm", IMAGE_NAME))
+            check_call(("docker", "rmi", IMAGE_NAME))
+            os.remove(dockerfile_new_path)
+
+            # get the compiled windows package
+            check_call(
+                (rf"C:\Program Files\Python3{i}\Scripts\linpgtb.exe", "-c", "."),
+                cwd=_CACHE_PATH,
+            )
+            check_call(
+                (rf"C:\Program Files\Python3{i}\Scripts\linpgtb.exe", "-p"),
+                cwd=_CACHE_PATH,
+            )
+            for p in glob(os.path.join(_CACHE_PATH, "dist", "*.whl")):
+                shutil.copy2(p, _DIST_DIR)
+
+        # create the source distribution
+        check_call(("linpgtb", "--zip", "."), cwd=_CACHE_PATH)
+        for p in glob(os.path.join(_CACHE_PATH, "dist", "*")):
+            shutil.copy2(p, _DIST_DIR)
+
+        # remove cache folder
+        shutil.rmtree(_CACHE_PATH)
