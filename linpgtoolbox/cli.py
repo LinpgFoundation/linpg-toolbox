@@ -2,6 +2,7 @@ import argparse
 import os
 import tomllib
 
+from ._fixer import Fixer
 from .builder import Builder
 from .organizer import Organizer
 from .pkginstaller import PackageInstaller
@@ -32,6 +33,7 @@ def cli() -> None:
     parser.add_argument("--upgrade", type=str, help="Upgrade a pip package")
     parser.add_argument("--zip", type=str, help="Create a source distribution")
     parser.add_argument("--build-all", type=str, help="Create a source distribution")
+    parser.add_argument("--fix", type=str, help="Create a source distribution")
 
     # get arguments
     args = parser.parse_args()
@@ -56,6 +58,8 @@ def cli() -> None:
         Organizer.organize_gitignore(args.organize)
     elif args.upgrade:
         PackageInstaller.upgrade(args.upgrade)
+    elif args.fix:
+        Fixer.match_case_to_if_else(args.fix)
 
 
 if __name__ == "__main__":

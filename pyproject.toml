@@ -22,7 +22,7 @@ license = {file = "LICENSE"}
 name = "linpgtoolbox"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "24.12"
+version = "25.1"
 
 [project.scripts]
 linpgtb = "linpgtoolbox.cli:cli"
