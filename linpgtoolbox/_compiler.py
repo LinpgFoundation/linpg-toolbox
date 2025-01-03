@@ -1,5 +1,4 @@
 import os
-from typing import Any
 
 import mypy.stubgen
 
@@ -65,6 +64,7 @@ if __name__ == "__main__":
     from glob import glob
     from multiprocessing import Process
     from tempfile import gettempdir
+    from typing import Any
 
     # 加载全局参数
     _data_path: str = os.path.join(

@@ -1,9 +1,9 @@
 import argparse
 import os
-import tomllib
 
+from ._execute import set_python_version
 from ._fixer import Fixer
-from .builder import Builder
+from .builder import Builder, tomllib
 from .organizer import Organizer
 from .pkginstaller import PackageInstaller
 
@@ -34,9 +34,15 @@ def cli() -> None:
     parser.add_argument("--zip", type=str, help="Create a source distribution")
     parser.add_argument("--build-all", type=str, help="Create a source distribution")
     parser.add_argument("--fix", type=str, help="Create a source distribution")
+    parser.add_argument("--select-py", type=str, help="Select the python version")
 
     # get arguments
     args = parser.parse_args()
+
+    # override default python version if given
+    if args.select_py:
+        set_python_version(args.select_py)
+
     # eacute operations
     if args.compile:
         Builder.compile(_get_project_name(args.compile))
