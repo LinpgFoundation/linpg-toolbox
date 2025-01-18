@@ -3,7 +3,7 @@ import os
 import mypy.stubgen
 
 # setuptools.setup import不可以在Cython.Build之后
-from setuptools import Extension, setup  # type: ignore
+from setuptools import setup  # type: ignore
 from Cython.Build import cythonize  # type: ignore
 
 

@@ -18,7 +18,6 @@ from .pyinstaller import PackageInstaller, PyInstaller
 class Builder:
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "_compiler.py")
     __CACHE_NEED_REMOVE: Final[tuple[str, ...]] = ("dist", "build")
-    CACHE_NEED_REMOVE: Final[deque[str]] = deque()
     __DIST_DIR: Final[str] = "dist"
 
     # 如果指定文件夹存在，则移除
@@ -36,15 +35,19 @@ class Builder:
         cls, files: tuple[str, ...], target_folder: str, move: bool = False
     ) -> None:
         for the_file in files:
+            _target: str = os.path.basename(the_file)
+            # if user customize relative output path
+            if "->" in the_file:
+                the_file, _target = the_file.split("->")
+            # make sure files are copied to target folder
+            _target = os.path.join(target_folder, _target.strip())
+            # remove unintentional empty spaces
+            the_file = the_file.strip()
             # 如果是文件夹
             if os.path.isdir(the_file):
-                shutil.copytree(
-                    the_file, os.path.join(target_folder, os.path.basename(the_file))
-                )
+                shutil.copytree(the_file, _target)
             else:
-                shutil.copy(
-                    the_file, os.path.join(target_folder, os.path.basename(the_file))
-                )
+                shutil.copy(the_file, _target)
             if move:
                 cls.remove(the_file)
 
@@ -134,6 +137,8 @@ class Builder:
             with open(pyproject_path, "rb") as f:
                 _config.update(tomllib.load(f).get("tool", {}).get("linpgtoolbox", {}))
                 _options.update(_config.get("options", {}))
+        # copy the files that are required for compiling
+        cls.copy(tuple(_config.get("requires", tuple())), source_path_in_target_folder)
         # 如果开启了智能模块合并模式
         smart_auto_module_combine: str = _options.get(
             "smart_auto_module_combine", "disable"
@@ -202,7 +207,10 @@ class Builder:
             execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
             # 删除缓存
             cls.__clean_up()
-            cls.remove(*cls.CACHE_NEED_REMOVE, cwd=source_path_in_target_folder)
+            cls.remove(
+                *_config.get("cache_needs_removal", tuple()),
+                cwd=source_path_in_target_folder,
+            )
 
         # 复制额外文件
         cls.copy(tuple(_config.get("includes", tuple())), source_path_in_target_folder)
