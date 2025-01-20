@@ -3,7 +3,6 @@ import shutil
 import sys
 import sysconfig
 import tomllib
-from collections import deque
 from glob import glob
 from json import dump
 from subprocess import check_call
@@ -276,7 +275,11 @@ class Builder:
             else (
                 "manylinux2014_x86_64"  # PEP 599
                 if sys.platform.startswith("linux")
-                else "none-any"
+                else (
+                    "macosx_11_0_arm64"
+                    if sys.platform.startswith("darwin")
+                    else "none-any"
+                )
             )
         )
         for _wheel_file in glob(os.path.join(cls.__DIST_DIR, f"*-{key_word}")):
