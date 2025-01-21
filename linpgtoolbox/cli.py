@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from ._execute import set_python_version
+from ._execute import set_python_version, sys
 from ._fixer import Fixer
 from .builder import Builder, tomllib
 from .organizer import Organizer
@@ -35,6 +35,9 @@ def cli() -> None:
     parser.add_argument("--build-all", type=str, help="Create a source distribution")
     parser.add_argument("--fix", type=str, help="Create a source distribution")
     parser.add_argument("--select-py", type=str, help="Select the python version")
+    parser.add_argument(
+        "--platform", action="store_true", help="Print current platform information"
+    )
 
     # get arguments
     args = parser.parse_args()
@@ -66,6 +69,8 @@ def cli() -> None:
         PackageInstaller.upgrade(args.upgrade)
     elif args.fix:
         Fixer.match_case_to_if_else(args.fix)
+    elif args.platform:
+        print(sys.platform, sys.version)
 
 
 if __name__ == "__main__":
