@@ -9,7 +9,12 @@ from subprocess import check_call
 from tempfile import gettempdir
 from typing import Any, Final
 
-from ._execute import execute_python
+from ._execute import (
+    execute_python,
+    get_current_python_version,
+    is_docker_disable,
+    is_using_windows,
+)
 from .pyinstaller import PackageInstaller, PyInstaller
 
 
@@ -267,11 +272,12 @@ class Builder:
         if not os_specific:
             return
         # 根据python_ver以及编译环境重命名
-        python_ver: str = f"cp{sys.version_info[0]}{sys.version_info[1]}"
-        key_word: str = f"py{sys.version_info[0]}-none-any.whl"
+        version_info: list[str] = get_current_python_version()
+        python_ver: str = f"cp{version_info[0]}{version_info[1]}"
+        key_word: str = f"py{version_info[0]}-none-any.whl"
         _evn: str = (
             sysconfig.get_platform().replace("-", "_")
-            if sys.platform.startswith("win")
+            if is_using_windows()
             else (
                 "manylinux2014_x86_64"  # PEP 599
                 if sys.platform.startswith("linux")
@@ -339,6 +345,24 @@ class Builder:
 
         # only support python 3.11 -> 3.13
         for i in range(py_ver_minor_min, py_ver_minor_max + 1):
+            # compile code for current platform with given python version
+            check_call(
+                (rf"linpgtb", "-c", ".", "--select-py", f"3.{i}"),
+                cwd=_CACHE_PATH,
+            )
+            # pack the code for current platform with given python version
+            check_call(
+                (rf"linpgtb", "-p", "--select-py", f"3.{i}"),
+                cwd=_CACHE_PATH,
+            )
+            # copy result to dist
+            for p in glob(os.path.join(_CACHE_PATH, "dist", "*.whl")):
+                shutil.copy2(p, _DIST_DIR)
+
+            # do not attempt to compile linux version if docker has been enabled
+            if is_docker_disable():
+                continue
+
             # create a docker file for current python version
             with open(
                 os.path.join(os.path.dirname(__file__), "__docker", "Dockerfile"), "r"
@@ -374,18 +398,6 @@ class Builder:
             check_call(("docker", "rm", IMAGE_NAME))
             check_call(("docker", "rmi", IMAGE_NAME))
             os.remove(dockerfile_new_path)
-
-            # get the compiled windows package
-            check_call(
-                (rf"C:\Program Files\Python3{i}\Scripts\linpgtb.exe", "-c", "."),
-                cwd=_CACHE_PATH,
-            )
-            check_call(
-                (rf"C:\Program Files\Python3{i}\Scripts\linpgtb.exe", "-p"),
-                cwd=_CACHE_PATH,
-            )
-            for p in glob(os.path.join(_CACHE_PATH, "dist", "*.whl")):
-                shutil.copy2(p, _DIST_DIR)
 
         # create the source distribution
         check_call(("linpgtb", "--zip", "."), cwd=_CACHE_PATH)
