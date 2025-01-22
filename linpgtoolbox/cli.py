@@ -1,20 +1,10 @@
 import argparse
-import os
 
 from ._execute import set_python_version, sys
 from ._fixer import Fixer
-from .builder import Builder, tomllib
+from .builder import Builder
 from .organizer import Organizer
 from .pkginstaller import PackageInstaller
-
-
-def _get_project_name(path: str) -> str:
-    if path != ".":
-        return path
-    if not os.path.exists("pyproject.toml"):
-        raise FileNotFoundError("Cannot find pyproject.toml!")
-    with open("pyproject.toml", "rb") as f:
-        return str(tomllib.load(f)["project"]["name"])
 
 
 def cli() -> None:
@@ -22,12 +12,10 @@ def cli() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--compile", "-c", type=str, help="Compile project")
     parser.add_argument("--install", "-i", type=str, help="Install project")
-    parser.add_argument("--pack", "-p", action="store_true", help="Pack project")
+    parser.add_argument("--pack", "-p", type=str, help="Pack project")
+    parser.add_argument("--upload", type=str, help="Upload packed project to PyPi")
     parser.add_argument(
-        "--upload", action="store_true", help="Upload packed project to PyPi"
-    )
-    parser.add_argument(
-        "--release", "-r", action="store_true", help="Pack and upload project to PyPi"
+        "--release", "-r", type=str, help="Pack and upload project to PyPi"
     )
     parser.add_argument("--organize", "-o", type=str, help="Organize project")
     parser.add_argument("--upgrade", type=str, help="Upgrade a pip package")
@@ -48,21 +36,20 @@ def cli() -> None:
 
     # eacute operations
     if args.compile:
-        Builder.compile(_get_project_name(args.compile))
+        Builder.compile(args.compile)
     elif args.install:
-        Builder.compile(_get_project_name(args.install), upgrade=True)
+        Builder.compile(args.install, upgrade=True)
         Builder.remove("src")
     elif args.build_all:
-        Builder.build_all(_get_project_name(args.build_all))
+        Builder.build_all(args.build_all)
     elif args.zip:
-        Builder.compile(_get_project_name(args.zip), skip_compile=True)
-        Builder.pack(False)
+        Builder.zip(args.zip)
     elif args.pack:
-        Builder.pack()
+        Builder.pack(args.pack)
     elif args.upload:
-        Builder.upload(False)
+        Builder.upload(args.upload, False)
     elif args.release:
-        Builder.release()
+        Builder.release(args.release)
     elif args.organize:
         Organizer.organize_gitignore(args.organize)
     elif args.upgrade:

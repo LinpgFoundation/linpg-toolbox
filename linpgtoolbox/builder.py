@@ -12,8 +12,8 @@ from typing import Any, Final
 from ._execute import (
     execute_python,
     get_current_python_version,
-    is_docker_disable,
     is_using_windows,
+    set_python_version,
 )
 from .pyinstaller import PackageInstaller, PyInstaller
 
@@ -22,7 +22,6 @@ from .pyinstaller import PackageInstaller, PyInstaller
 class Builder:
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "_compiler.py")
     __CACHE_NEED_REMOVE: Final[tuple[str, ...]] = ("dist", "build")
-    __DIST_DIR: Final[str] = "dist"
 
     # 如果指定文件夹存在，则移除
     @staticmethod
@@ -36,7 +35,11 @@ class Builder:
     # 复制文件
     @classmethod
     def copy(
-        cls, files: tuple[str, ...], target_folder: str, move: bool = False
+        cls,
+        files: tuple[str, ...],
+        target_folder: str,
+        move: bool = False,
+        cwd: str | None = None,
     ) -> None:
         for the_file in files:
             _target: str = os.path.basename(the_file)
@@ -46,19 +49,30 @@ class Builder:
             # make sure files are copied to target folder
             _target = os.path.join(target_folder, _target.strip())
             # remove unintentional empty spaces
-            the_file = the_file.strip()
+            the_file = (
+                the_file.strip() if cwd is None else os.path.join(cwd, the_file.strip())
+            )
             # 如果是文件夹
             if os.path.isdir(the_file):
+                cls.remove(_target)
                 shutil.copytree(the_file, _target)
             else:
                 shutil.copy(the_file, _target)
             if move:
                 cls.remove(the_file)
 
-    # 删除缓存
+    # delete all the cache
     @classmethod
-    def __clean_up(cls) -> None:
-        cls.remove(*cls.__CACHE_NEED_REMOVE)
+    def __clean_up(cls, cwd: str | None = None) -> None:
+        cls.remove(*cls.__CACHE_NEED_REMOVE, cwd=cwd)
+
+    # delete the dir and create a new one with same name
+    @classmethod
+    def __remake_dir(cls, path: str) -> None:
+        # delete the dir
+        cls.remove(path)
+        # create a new one with same name
+        os.makedirs(path)
 
     # 合并模块
     @classmethod
@@ -118,29 +132,30 @@ class Builder:
         # make sure required libraries are installed
         PackageInstaller.install("setuptools")
         PackageInstaller.install("cython")
-        # 移除cache
-        cls.remove(target_folder)
-        # 复制文件到新建的src文件夹中，准备开始编译
-        os.makedirs(target_folder)
-        source_path_in_target_folder: str = os.path.join(
-            target_folder, os.path.basename(source_folder)
-        )
+        # remove cache folder
+        abs_target_folder: str = os.path.join(source_folder, target_folder)
+        cls.remove(abs_target_folder)
+        # make sure pyproject.toml exists
+        pyproject_path: str = os.path.join(source_folder, "pyproject.toml")
+        if not os.path.exists(pyproject_path):
+            raise FileNotFoundError("Cannot find pyproject.toml!")
+        # load config for linpgtoolbox
+        _config: dict[str, Any] = {}
+        _options: dict[str, Any] = {}
+        with open(pyproject_path, "rb") as f:
+            data: dict[str, Any] = tomllib.load(f)
+            _config.update(data.get("tool", {}).get("linpgtoolbox", {}))
+            _options.update(_config.get("options", {}))
+            project_name: str = str(data["project"]["name"])
         # copy repo to detonation folder
+        source_path_in_target_folder: str = os.path.join(
+            abs_target_folder, project_name
+        )
         shutil.copytree(
-            source_folder,
+            os.path.join(source_folder, project_name),
             source_path_in_target_folder,
             ignore=shutil.ignore_patterns(".git", "__pycache__", ".mypy_cache"),
         )
-        # load config for linpgtoolbox
-        pyproject_path: Final[str] = os.path.join(
-            os.path.dirname(source_folder), "pyproject.toml"
-        )
-        _config: dict[str, Any] = {}
-        _options: dict[str, Any] = {}
-        if os.path.exists(pyproject_path):
-            with open(pyproject_path, "rb") as f:
-                _config.update(tomllib.load(f).get("tool", {}).get("linpgtoolbox", {}))
-                _options.update(_config.get("options", {}))
         # copy the files that are required for compiling
         cls.copy(tuple(_config.get("requires", tuple())), source_path_in_target_folder)
         # 如果开启了智能模块合并模式
@@ -165,8 +180,7 @@ class Builder:
             cmake_build_dir: Final[str] = os.path.join(
                 source_path_in_target_folder, "build"
             )
-            cls.remove(cmake_build_dir)
-            os.makedirs(cmake_build_dir)
+            cls.__remake_dir(cmake_build_dir)
             # make project
             check_call(["cmake", ".."], cwd=cmake_build_dir)
             check_call(
@@ -199,7 +213,8 @@ class Builder:
             builder_options.update(_options)
             with open(
                 os.path.join(
-                    gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
+                    gettempdir() if os.name == "nt" else source_folder,
+                    "builder_data_cache.json",
                 ),
                 "w",
                 encoding="utf-8",
@@ -208,16 +223,22 @@ class Builder:
             # 确保mypy已经安装
             PackageInstaller.install("mypy")
             # 编译源代码
-            execute_python(cls.__PATH, "build_ext", "--build-lib", target_folder)
+            execute_python(
+                cls.__PATH, "build_ext", "--build-lib", target_folder, cwd=source_folder
+            )
             # 删除缓存
-            cls.__clean_up()
+            cls.__clean_up(source_folder)
             cls.remove(
                 *_config.get("cache_needs_removal", tuple()),
-                cwd=source_path_in_target_folder,
+                cwd=source_folder,
             )
 
         # 复制额外文件
-        cls.copy(tuple(_config.get("includes", tuple())), source_path_in_target_folder)
+        cls.copy(
+            tuple(_config.get("includes", tuple())),
+            source_path_in_target_folder,
+            cwd=source_folder,
+        )
         # 写入默认的PyInstaller程序
         if _options.get("include_pyinstaller", False) is True:
             PyInstaller.generate_hook(
@@ -246,11 +267,11 @@ class Builder:
         # 删除在sitepackages中的旧build，同时复制新的build
         if upgrade is True:
             # 移除旧的build
-            PackageInstaller.uninstall(os.path.basename(source_folder))
+            PackageInstaller.uninstall(project_name)
             # 安装新的build
-            PackageInstaller.install(".")
+            PackageInstaller.install(source_folder)
         # 删除build文件夹
-        cls.remove("build")
+        cls.remove("build", cwd=source_folder)
         # 提示编译完成
         if show_success_message:
             for _ in range(2):
@@ -261,13 +282,13 @@ class Builder:
 
     # 构建最新的release
     @classmethod
-    def pack(cls, os_specific: bool = True) -> None:
+    def pack(cls, path: str, os_specific: bool = True) -> None:
         # 升级build工具
         PackageInstaller.install("build")
         # 升级wheel工具
         PackageInstaller.install("wheel")
         # 打包文件
-        execute_python("-m", "build", "--no-isolation")
+        execute_python("-m", "build", "--no-isolation", cwd=path)
         # if the project is not os specific, then rename are not needed
         if not os_specific:
             return
@@ -288,7 +309,7 @@ class Builder:
                 )
             )
         )
-        for _wheel_file in glob(os.path.join(cls.__DIST_DIR, f"*-{key_word}")):
+        for _wheel_file in glob(os.path.join(path, "dist", f"*-{key_word}")):
             os.rename(
                 _wheel_file,
                 _wheel_file.replace(
@@ -299,110 +320,102 @@ class Builder:
 
     # upload the packaged project
     @classmethod
-    def upload(cls, confirm: bool = True) -> None:
+    def upload(cls, path: str, confirm: bool = True) -> None:
         # 要求用户确认dist文件夹中的打包好的文件之后在继续
         if (
             not confirm
             or input(
-                f'Please confirm the files in "{cls.__DIST_DIR}" folder and enter Y to continue:'
+                f'Please confirm the files in "dist" folder and enter Y to continue:'
             )
             == "Y"
         ):
             # 升级twine
             PackageInstaller.install("twine")
             # 用twine上传文件
-            execute_python("-m", "twine", "upload", f"{cls.__DIST_DIR}/*")
+            execute_python("-m", "twine", "upload", "dist/*", cwd=path)
         # 删除缓存
-        cls.__clean_up()
+        cls.__clean_up(os.path.dirname(path))
 
     # pack and upload project
     @classmethod
-    def release(cls) -> None:
-        cls.pack()
-        cls.upload()
+    def release(cls, path: str) -> None:
+        cls.pack(path)
+        cls.upload(path)
 
+    # zip project source code
+    @classmethod
+    def zip(cls, path: str) -> None:
+        cls.compile(path, skip_compile=True)
+        cls.pack(path, False)
+
+    # build the project with docker
+    def build_with_docker(cls, path: str, dist: str, py_ver_minor: int) -> None:
+        # the name of the parent folder
+        _FOLDER_NAME: str = os.path.basename(path)
+        # create a docker file for current python version
+        with open(
+            os.path.join(os.path.dirname(__file__), "__docker", "Dockerfile"), "r"
+        ) as f:
+            _content: str = f.read()
+        _content = _content.replace("PYTHON_VERSION_MINOR", str(py_ver_minor)).replace(
+            "PROJECT_NAME", _FOLDER_NAME
+        )
+        dockerfile_new_filename: str = f".Dockerfile_3{py_ver_minor}"
+        dockerfile_new_path: str = os.path.join(
+            os.path.dirname(path), dockerfile_new_filename
+        )
+        with open(dockerfile_new_path, "w") as f:
+            f.write(_content)
+        # run the image to obtain compiled linux package
+        IMAGE_NAME: str = f"{_FOLDER_NAME}-image-{py_ver_minor}"
+        check_call(
+            (
+                "docker",
+                "build",
+                "-t",
+                IMAGE_NAME,
+                "-f",
+                dockerfile_new_path,
+                os.path.dirname(path),
+            )
+        )
+        check_call(("docker", "run", "--name", IMAGE_NAME, IMAGE_NAME))
+        # copy result to given dist folder
+        check_call(("docker", "cp", f"{IMAGE_NAME}:/app/{_FOLDER_NAME}/dist", dist))
+        # remove cache
+        check_call(("docker", "rm", IMAGE_NAME))
+        check_call(("docker", "rmi", IMAGE_NAME))
+        os.remove(dockerfile_new_path)
+
+    # build project for all supported python version
     @classmethod
     def build_all(
         cls, path: str, py_ver_minor_max: int = 13, py_ver_minor_min: int = 11
     ) -> None:
-        # the name of the parent folder
-        _FOLDER_NAME: str = os.path.basename(path)
         # the dist folder
-        _DIST_DIR: str = os.path.join(os.path.dirname(path), "dist")
-        # a temporary folder for storing a copy
-        _CACHE_PATH: str = os.path.join(_DIST_DIR, _FOLDER_NAME)
-
-        # creating a copy for operations
-        if os.path.exists(_DIST_DIR):
-            shutil.rmtree(_DIST_DIR)
-        shutil.copytree(
-            os.path.join(path, ".."),
-            _CACHE_PATH,
-            ignore=shutil.ignore_patterns(
-                ".git", "__pycache__", ".mypy_cache", "docker", ".github", ".vscode"
-            ),
-        )
+        _DIST_DIR: str = os.path.join(path, "dist")
+        # a temp dist folder for storing all the packages
+        TEMP_DIST: str = os.path.join(path, ".dist")
+        cls.__remake_dir(TEMP_DIST)
 
         # only support python 3.11 -> 3.13
         for i in range(py_ver_minor_min, py_ver_minor_max + 1):
+            set_python_version(f"3.{i}")
             # compile code for current platform with given python version
-            check_call(
-                (rf"linpgtb", "-c", ".", "--select-py", f"3.{i}"),
-                cwd=_CACHE_PATH,
-            )
+            cls.compile(path)
             # pack the code for current platform with given python version
-            check_call(
-                (rf"linpgtb", "-p", "--select-py", f"3.{i}"),
-                cwd=_CACHE_PATH,
-            )
+            cls.pack(path)
             # copy result to dist
-            for p in glob(os.path.join(_CACHE_PATH, "dist", "*.whl")):
-                shutil.copy2(p, _DIST_DIR)
+            for p in glob(os.path.join(_DIST_DIR, "*.whl")):
+                shutil.copy2(p, TEMP_DIST)
 
-            # do not attempt to compile linux version if docker has been enabled
-            if is_docker_disable():
-                continue
-
-            # create a docker file for current python version
-            with open(
-                os.path.join(os.path.dirname(__file__), "__docker", "Dockerfile"), "r"
-            ) as f:
-                _content: str = f.read()
-            _content = _content.replace("PYTHON_VERSION_MINOR", str(i)).replace(
-                "PROJECT_NAME", _FOLDER_NAME
-            )
-            dockerfile_new_filename: str = f"Dockerfile_3{i}"
-            dockerfile_new_path: str = os.path.join(_DIST_DIR, dockerfile_new_filename)
-            with open(dockerfile_new_path, "w") as f:
-                f.write(_content)
-
-            # run the image to obtain compiled linux package
-            IMAGE_NAME: str = f"{_FOLDER_NAME}-image-{i}"
-            check_call(
-                (
-                    "docker",
-                    "build",
-                    "-t",
-                    IMAGE_NAME,
-                    "-f",
-                    dockerfile_new_filename,
-                    ".",
-                ),
-                cwd=_DIST_DIR,
-            )
-            check_call(("docker", "run", "--name", IMAGE_NAME, IMAGE_NAME))
-            check_call(
-                ("docker", "cp", f"{IMAGE_NAME}:/app/{_FOLDER_NAME}/dist", "../"),
-                cwd=_DIST_DIR,
-            )
-            check_call(("docker", "rm", IMAGE_NAME))
-            check_call(("docker", "rmi", IMAGE_NAME))
-            os.remove(dockerfile_new_path)
+        # reset python version
+        set_python_version()
 
         # create the source distribution
-        check_call(("linpgtb", "--zip", "."), cwd=_CACHE_PATH)
-        for p in glob(os.path.join(_CACHE_PATH, "dist", "*")):
+        cls.zip(path)
+        for p in glob(os.path.join(TEMP_DIST, "*")):
             shutil.copy2(p, _DIST_DIR)
 
         # remove cache folder
-        shutil.rmtree(_CACHE_PATH)
+        cls.remove(TEMP_DIST, "src", cwd=path)
