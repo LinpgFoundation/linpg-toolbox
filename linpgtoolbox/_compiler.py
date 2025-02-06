@@ -51,9 +51,7 @@ if __name__ == "__main__":
     from typing import Any
 
     # 加载全局参数
-    _data_path: str = os.path.join(
-        gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
-    )
+    _data_path: str = os.path.join(gettempdir(), "builder_data_cache.json")
     with open(_data_path, "r", encoding="utf-8") as f:
         _data: dict[str, Any] = json.load(f)
         # 是否启用debug模式

@@ -212,10 +212,7 @@ class Builder:
             }
             builder_options.update(_options)
             with open(
-                os.path.join(
-                    gettempdir() if os.name == "nt" else source_folder,
-                    "builder_data_cache.json",
-                ),
+                os.path.join(gettempdir(), "builder_data_cache.json"),
                 "w",
                 encoding="utf-8",
             ) as f:

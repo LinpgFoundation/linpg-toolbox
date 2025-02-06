@@ -26,6 +26,11 @@ def cli() -> None:
     parser.add_argument(
         "--platform", action="store_true", help="Print current platform information"
     )
+    parser.add_argument(
+        "--reinstall",
+        action="store_true",
+        help="Reinstall Linpg Toolbox (Debug Purpose)",
+    )
 
     # get arguments
     args = parser.parse_args()
@@ -58,6 +63,8 @@ def cli() -> None:
         Fixer.match_case_to_if_else(args.fix)
     elif args.platform:
         print(sys.platform, sys.version)
+    elif args.reinstall:
+        PackageInstaller.reinstall("linpgtoolbox")
 
 
 if __name__ == "__main__":

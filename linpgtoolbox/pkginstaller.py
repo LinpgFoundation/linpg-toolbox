@@ -4,21 +4,33 @@ from ._execute import execute_python
 
 
 class PackageInstaller:
+
+    # run pip commend
+    @staticmethod
+    def pip(*cmd: str, cwd: str | None = None) -> None:
+        execute_python("-m", "pip", *cmd, cwd=cwd)
+
     # install a third-party library
     @classmethod
     def install(
         cls, pkg_name: str, upgrade: bool = True, cwd: str | None = None
     ) -> None:
-        _cmd: list[str] = ["-m", "pip", "install", pkg_name]
+        _cmd: list[str] = ["install", pkg_name]
         # ensure the latest version will be installed
         if upgrade is True:
             _cmd.append("--upgrade")
-        execute_python(*_cmd, cwd=cwd)
+        cls.pip(*_cmd, cwd=cwd)
 
     # uninstall a third-party library
     @classmethod
     def uninstall(cls, pkg_name: str) -> None:
-        execute_python("-m", "pip", "uninstall", "-y", pkg_name)
+        cls.pip("uninstall", "-y", pkg_name)
+
+    # reinstall a third-party library
+    @classmethod
+    def reinstall(cls, pkg_name: str) -> None:
+        cls.uninstall(pkg_name)
+        cls.install(pkg_name)
 
     # upgrade a third-party library (* for upgrading all third-party libraries)
     @classmethod
