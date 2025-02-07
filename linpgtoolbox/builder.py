@@ -345,45 +345,6 @@ class Builder:
         cls.compile(path, skip_compile=True)
         cls.pack(path, False)
 
-    # build the project with docker
-    def build_with_docker(cls, path: str, dist: str, py_ver_minor: int) -> None:
-        # the name of the parent folder
-        _FOLDER_NAME: str = os.path.basename(path)
-        # create a docker file for current python version
-        with open(
-            os.path.join(os.path.dirname(__file__), "__docker", "Dockerfile"), "r"
-        ) as f:
-            _content: str = f.read()
-        _content = _content.replace("PYTHON_VERSION_MINOR", str(py_ver_minor)).replace(
-            "PROJECT_NAME", _FOLDER_NAME
-        )
-        dockerfile_new_filename: str = f".Dockerfile_3{py_ver_minor}"
-        dockerfile_new_path: str = os.path.join(
-            os.path.dirname(path), dockerfile_new_filename
-        )
-        with open(dockerfile_new_path, "w") as f:
-            f.write(_content)
-        # run the image to obtain compiled linux package
-        IMAGE_NAME: str = f"{_FOLDER_NAME}-image-{py_ver_minor}"
-        check_call(
-            (
-                "docker",
-                "build",
-                "-t",
-                IMAGE_NAME,
-                "-f",
-                dockerfile_new_path,
-                os.path.dirname(path),
-            )
-        )
-        check_call(("docker", "run", "--name", IMAGE_NAME, IMAGE_NAME))
-        # copy result to given dist folder
-        check_call(("docker", "cp", f"{IMAGE_NAME}:/app/{_FOLDER_NAME}/dist", dist))
-        # remove cache
-        check_call(("docker", "rm", IMAGE_NAME))
-        check_call(("docker", "rmi", IMAGE_NAME))
-        os.remove(dockerfile_new_path)
-
     # build project for all supported python version
     @classmethod
     def build_all(
