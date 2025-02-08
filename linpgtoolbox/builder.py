@@ -132,6 +132,8 @@ class Builder:
         # make sure required libraries are installed
         PackageInstaller.install("setuptools")
         PackageInstaller.install("cython")
+        # convert to abs path
+        source_folder = os.path.abspath(source_folder)
         # remove cache folder
         abs_target_folder: str = os.path.join(source_folder, target_folder)
         cls.remove(abs_target_folder)
@@ -212,7 +214,7 @@ class Builder:
             }
             builder_options.update(_options)
             with open(
-                os.path.join(gettempdir(), "builder_data_cache.json"),
+                os.path.join(gettempdir(), "linpgtoolbox_builder_cache.json"),
                 "w",
                 encoding="utf-8",
             ) as f:
@@ -227,7 +229,7 @@ class Builder:
             cls.__clean_up(source_folder)
             cls.remove(
                 *_config.get("cache_needs_removal", tuple()),
-                cwd=source_folder,
+                cwd=source_path_in_target_folder,
             )
 
         # 复制额外文件
@@ -271,11 +273,7 @@ class Builder:
         cls.remove("build", cwd=source_folder)
         # 提示编译完成
         if show_success_message:
-            for _ in range(2):
-                print("")
-            print("--------------------Done!--------------------")
-            for _ in range(2):
-                print("")
+            print("\n--------------------Done!--------------------\n")
 
     # 构建最新的release
     @classmethod

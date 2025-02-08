@@ -29,7 +29,7 @@ class PyInstaller:
         with open(hook_path, "r", encoding="utf-8") as f:
             lines: list[str] = f.readlines()
         # replace placeholder with correct parameters
-        lines[0] = f"{lines[0].removesuffix('\n')}, {_name}\n"
+        lines[0] = lines[0].removesuffix("\n") + f", {_name}\n"
         lines[2] = lines[2].replace('"%path%"', f"{_name}.__path__[0]")
         lines[3] = lines[3].replace("%name%", _name)
         if len(_hidden_imports) > 0:
