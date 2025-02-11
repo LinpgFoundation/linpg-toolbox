@@ -159,7 +159,11 @@ class Builder:
             ignore=shutil.ignore_patterns(".git", "__pycache__", ".mypy_cache"),
         )
         # copy the files that are required for compiling
-        cls.copy(tuple(_config.get("requires", tuple())), source_path_in_target_folder)
+        cls.copy(
+            tuple(_config.get("requires", tuple())),
+            source_path_in_target_folder,
+            cwd=source_folder,
+        )
         # 如果开启了智能模块合并模式
         smart_auto_module_combine: str = _options.get(
             "smart_auto_module_combine", "disable"

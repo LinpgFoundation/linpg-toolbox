@@ -62,7 +62,7 @@ def cli() -> None:
     elif args.fix:
         Fixer.match_case_to_if_else(args.fix)
     elif args.platform:
-        print(sys.platform, sys.version)
+        print(f"python[{sys.platform}]-{sys.version}")
     elif args.reinstall:
         PackageInstaller.reinstall("linpgtoolbox")
 
