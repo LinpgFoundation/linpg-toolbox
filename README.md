@@ -2,9 +2,9 @@
 
 ![PyPI](https://img.shields.io/pypi/pyversions/linpgtoolbox?style=for-the-badge&logo=pypi) ![PyPI](https://img.shields.io/pypi/v/linpgtoolbox?style=for-the-badge&logo=pypi) ![PyPI](https://img.shields.io/pypi/dm/linpgtoolbox?style=for-the-badge&logo=pypi)
 
-Linpg-toolbox is a set of tools for managing, compiling, and uploading your own python package. It has been used within Tigeia Workshop for many years and was previously been provided as part of the Linpg Engine. To better accommodate Linpg Engine's frequent iterations work schedule, linpg-toolbox has now been split out and become available as a separate third-party package.
+Linpg-toolbox is a set of tools for managing, compiling, and uploading your own python package. It has been used within Linpg Foundation for many years and was previously been provided as part of the Linpg Engine. To better accommodate Linpg Engine's frequent iterations work schedule, linpg-toolbox has now been split out and become available as a separate third-party package.
 
-linpg- toolbox是一个已经在缇吉娅工坊内部使用多年的开发管理以及打包工具，过去一直作为linpg引擎的一部分提供。为了能够更好地适应linpg的高速版本迭代工作，linpg-toolbox现在被拆分出来，作为单独的第三方包提供。
+linpg- toolbox是一个已经在Linpg基金会内部使用多年的开发管理以及打包工具，过去一直作为linpg引擎的一部分提供。为了能够更好地适应linpg的高速版本迭代工作，linpg-toolbox现在被拆分出来，作为单独的第三方包提供。
 
 
 
@@ -21,16 +21,35 @@ The toolkit contains the following classes / 工具包包含以下程序:
 
 
 
-# Examples / 例子
+# Command line usage / 命令行
 
-All Linpg Foundation packages, including the Linpg engine and this toolkit, are currently packaged using linpg-toolkit:
+This project can be used as either a Python library or a command line utility. For command line usage, see below:
 
-目前，所有Linpg基金会旗下的所有项目，包含但不仅限于Linpg引擎和该工具包本身，都使用了该工具包进行打包：
+该项目既可以作为 Python 库使用，也可以作为命令行工具使用。有关命令行用法，请参阅下文：
 
-[linpg-toolbox/builder.py](https://github.com/LinpgFoundation/linpg-toolbox/blob/master/builder.py)
+```
+$ linpgtb --help
+usage: linpgtb [-h] [--compile COMPILE] [--install INSTALL] [--pack PACK] [--upload UPLOAD] [--release RELEASE] [--organize ORGANIZE] [--upgrade UPGRADE] [--zip ZIP] [--build-all BUILD_ALL] [--fix FIX] [--select-py SELECT_PY] [--platform] [--reinstall]
 
-[linpg/builder.py](https://github.com/LinpgFoundation/linpg/blob/master/builder.py)
-
-In general, you just need to copy and paste the "builder.py" file into your project's directory and modify the parameters a little, and you are good to go.
-
-一般情况下，您只需要将builder.py复制粘贴到你的项目的目录下并稍加修改参数即可。
+options:
+  -h, --help            show this help message and exit
+  --compile, -c COMPILE
+                        Compile project
+  --install, -i INSTALL
+                        Install project
+  --pack, -p PACK       Pack project
+  --upload UPLOAD       Upload packed project to PyPi
+  --release, -r RELEASE
+                        Pack and upload project to PyPi
+  --organize, -o ORGANIZE
+                        Organize project
+  --upgrade UPGRADE     Upgrade a pip package
+  --zip ZIP             Create a source distribution
+  --build-all BUILD_ALL
+                        Create a source distribution
+  --fix FIX             Create a source distribution
+  --select-py SELECT_PY
+                        Select the python version
+  --platform            Print current platform information
+  --reinstall           Reinstall Linpg Toolbox (Debug Purpose)
+```

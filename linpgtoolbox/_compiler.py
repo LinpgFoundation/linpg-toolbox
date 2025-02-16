@@ -1,36 +1,19 @@
 import os
-from typing import Any
 
 import mypy.stubgen
 
 # setuptools.setup import不可以在Cython.Build之后
-from setuptools import Extension, setup  # type: ignore
+from setuptools import setup  # type: ignore
 from Cython.Build import cythonize  # type: ignore
 
 
 # 编译方法
 def _compile_file(
-    _source_folder: str,
-    _path: str,
-    _keep_c: bool,
-    _debug_mode: bool,
-    extra_compile_args: dict[str, list[str]],
+    _source_folder: str, _path: str, _keep_c: bool, _debug_mode: bool
 ) -> None:
     setup(
         ext_modules=cythonize(
-            (
-                _path
-                if _path.endswith(".py")
-                else [
-                    Extension(
-                        os.path.splitext(os.path.basename(_path))[0],
-                        [_path],
-                        extra_compile_args=extra_compile_args.get(
-                            os.path.basename(_path), []
-                        ),
-                    )
-                ]
-            ),
+            _path,
             show_all_warnings=_debug_mode,
             annotate=_debug_mode,
             language_level="3",
@@ -65,11 +48,10 @@ if __name__ == "__main__":
     from glob import glob
     from multiprocessing import Process
     from tempfile import gettempdir
+    from typing import Any
 
     # 加载全局参数
-    _data_path: str = os.path.join(
-        gettempdir() if os.name == "nt" else ".", "builder_data_cache.json"
-    )
+    _data_path: str = os.path.join(gettempdir(), "linpgtoolbox_builder_cache.json")
     with open(_data_path, "r", encoding="utf-8") as f:
         _data: dict[str, Any] = json.load(f)
         # 是否启用debug模式
@@ -82,10 +64,6 @@ if __name__ == "__main__":
         _source_folder: str = str(_data["source_folder"])
         # 需要忽略的文件的关键词
         _ignores: tuple[str, ...] = tuple(_data["ignores"])
-        # 额外args
-        extra_compile_args: dict[str, list[str]] = dict(
-            _data.get("extra_compile_args", {})
-        )
 
     # 移除参数文件
     os.remove(_data_path)
@@ -112,24 +90,12 @@ if __name__ == "__main__":
                         cls.__processes.append(
                             Process(
                                 target=_compile_file,
-                                args=(
-                                    _source_folder,
-                                    _path,
-                                    _keep_c,
-                                    _debug_mode,
-                                    extra_compile_args,
-                                ),
+                                args=(_source_folder, _path, _keep_c, _debug_mode),
                             )
                         )
                     # 如果不使用多线程
                     else:
-                        _compile_file(
-                            _source_folder,
-                            _path,
-                            _keep_c,
-                            _debug_mode,
-                            extra_compile_args,
-                        )
+                        _compile_file(_source_folder, _path, _keep_c, _debug_mode)
             elif "pyinstaller" not in _path and "pycache" not in _path:
                 if not cls.__if_ignore(_path):
                     for file_in_dir in glob(os.path.join(_path, "*")):

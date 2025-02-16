@@ -4,14 +4,14 @@ import os
 class Organizer:
     # organize gitignore
     @staticmethod
-    def organize_gitignore(_path: str = ".", filename: str = ".gitignore") -> None:
+    def organize_gitignore(_dir: str = ".", filename: str = ".gitignore") -> None:
         # join path
-        _path = os.path.join(_path, filename)
+        _dir = os.path.join(_dir, filename)
         # check if target file is a gitignore file
-        if not _path.endswith(".gitignore"):
+        if not _dir.endswith(".gitignore"):
             raise FileNotFoundError("The file has to be gitignore!")
         # read content from gitignore file
-        with open(_path, "r", encoding="utf-8") as f:
+        with open(_dir, "r", encoding="utf-8") as f:
             lines: list[str] = f.readlines()
         # making sure that the last line has \n symbol.
         # if not, then add one right now
@@ -38,5 +38,5 @@ class Organizer:
                 result_lines.append(key)
                 result_lines.extend(sorted(value))
         # write the data back to gitignore file
-        with open(_path, "w+", encoding="utf-8") as f:
+        with open(_dir, "w+", encoding="utf-8") as f:
             f.writelines(result_lines)
