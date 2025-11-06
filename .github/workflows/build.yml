@@ -1,8 +1,5 @@
 name: Build on All Platforms
 on:
-    pull_request:
-        branches:
-        - '**'
     push:
         branches:
         - '**'
