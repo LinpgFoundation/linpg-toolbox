@@ -13,10 +13,7 @@ def _compile_file(
 ) -> None:
     setup(
         ext_modules=cythonize(
-            _path,
-            show_all_warnings=_debug_mode,
-            annotate=_debug_mode,
-            language_level="3",
+            _path, show_all_warnings=_debug_mode, annotate=_debug_mode
         )
     )
     # 删除c/cpp文件
