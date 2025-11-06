@@ -20,7 +20,6 @@ def cli() -> None:
     parser.add_argument("--organize", "-o", type=str, help="Organize project")
     parser.add_argument("--upgrade", type=str, help="Upgrade a pip package")
     parser.add_argument("--zip", type=str, help="Create a source distribution")
-    parser.add_argument("--build-all", type=str, help="Create a source distribution")
     parser.add_argument("--fix", type=str, help="Create a source distribution")
     parser.add_argument("--select-py", type=str, help="Select the python version")
     parser.add_argument(
@@ -45,8 +44,6 @@ def cli() -> None:
     elif args.install:
         Builder.compile(args.install, upgrade=True)
         Builder.remove("src")
-    elif args.build_all:
-        Builder.build_all(args.build_all)
     elif args.zip:
         Builder.zip(args.zip)
     elif args.pack:

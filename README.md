@@ -29,7 +29,7 @@ This project can be used as either a Python library or a command line utility. F
 
 ```
 $ linpgtb --help
-usage: linpgtb [-h] [--compile COMPILE] [--install INSTALL] [--pack PACK] [--upload UPLOAD] [--release RELEASE] [--organize ORGANIZE] [--upgrade UPGRADE] [--zip ZIP] [--build-all BUILD_ALL] [--fix FIX] [--select-py SELECT_PY] [--platform] [--reinstall]
+usage: linpgtb [-h] [--compile COMPILE] [--install INSTALL] [--pack PACK] [--upload UPLOAD] [--release RELEASE] [--organize ORGANIZE] [--upgrade UPGRADE] [--zip ZIP] [--fix FIX] [--select-py SELECT_PY] [--platform] [--reinstall]
 
 options:
   -h, --help            show this help message and exit
@@ -45,9 +45,7 @@ options:
                         Organize project
   --upgrade UPGRADE     Upgrade a pip package
   --zip ZIP             Create a source distribution
-  --build-all BUILD_ALL
-                        Create a source distribution
-  --fix FIX             Create a source distribution
+  --fix FIX             Fix certain cython related issues
   --select-py SELECT_PY
                         Select the python version
   --platform            Print current platform information
