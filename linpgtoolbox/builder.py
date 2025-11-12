@@ -346,36 +346,3 @@ class Builder:
     def zip(cls, path: str) -> None:
         cls.compile(path, skip_compile=True)
         cls.pack(path, False)
-
-    # build project for all supported python version
-    @classmethod
-    def build_all(
-        cls, path: str, py_ver_minor_max: int = 13, py_ver_minor_min: int = 11
-    ) -> None:
-        # the dist folder
-        _DIST_DIR: str = os.path.join(path, "dist")
-        # a temp dist folder for storing all the packages
-        TEMP_DIST: str = os.path.join(path, ".dist")
-        cls.__remake_dir(TEMP_DIST)
-
-        # only support python 3.11 -> 3.13
-        for i in range(py_ver_minor_min, py_ver_minor_max + 1):
-            set_python_version(f"3.{i}")
-            # compile code for current platform with given python version
-            cls.compile(path)
-            # pack the code for current platform with given python version
-            cls.pack(path)
-            # copy result to dist
-            for p in glob(os.path.join(_DIST_DIR, "*.whl")):
-                shutil.copy2(p, TEMP_DIST)
-
-        # reset python version
-        set_python_version()
-
-        # create the source distribution
-        cls.zip(path)
-        for p in glob(os.path.join(TEMP_DIST, "*")):
-            shutil.copy2(p, _DIST_DIR)
-
-        # remove cache folder
-        cls.remove(TEMP_DIST, "src", cwd=path)
