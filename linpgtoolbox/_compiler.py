@@ -3,7 +3,7 @@ import os
 import mypy.stubgen
 
 # setuptools.setup import不可以在Cython.Build之后
-from setuptools import setup  # type: ignore
+from setuptools import setup
 from Cython.Build import cythonize  # type: ignore
 
 
@@ -12,7 +12,7 @@ def _compile_file(
     _source_folder: str, _path: str, _keep_c: bool, _debug_mode: bool
 ) -> None:
     setup(
-        ext_modules=cythonize(
+        ext_modules=cythonize(  # type: ignore
             _path, show_all_warnings=_debug_mode, annotate=_debug_mode
         )
     )
