@@ -28,6 +28,8 @@ class Organizer:
         # write the data back to json file
         with open(filePath, "w+", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False, sort_keys=True)
+        # print confirmation message
+        print(f"Organized JSON file: {filePath}")
 
     # organize gitignore
     @staticmethod
@@ -66,3 +68,6 @@ class Organizer:
         # write the data back to gitignore file
         with open(filePath, "w+", encoding="utf-8") as f:
             f.writelines(result_lines)
+
+        # print confirmation message
+        print(f"Organized .gitignore file: {filePath}")
