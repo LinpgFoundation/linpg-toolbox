@@ -1,17 +1,43 @@
+import json
 import os
+from typing import Any
 
 
 class Organizer:
+
+    # organize directory
+    @staticmethod
+    def organize_directory(directoryPath: str) -> None:
+        # iterate through all files in the directory
+        for root, _, files in os.walk(directoryPath):
+            for f in files:
+                file_path: str = os.path.join(root, f)
+                # organize json files
+                if f.endswith(".json"):
+                    Organizer.organize_json_file(file_path)
+                # organize gitignore files
+                elif f == ".gitignore":
+                    Organizer.organize_gitignore(file_path)
+
+    # organize json file
+    @staticmethod
+    def organize_json_file(filePath: str) -> None:
+        # read content from json file
+        with open(filePath, "r", encoding="utf-8") as f:
+            data: Any = json.load(f)
+        # write the data back to json file
+        with open(filePath, "w+", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False, sort_keys=True)
+
     # organize gitignore
     @staticmethod
-    def organize_gitignore(_dir: str = ".", filename: str = ".gitignore") -> None:
-        # join path
-        _dir = os.path.join(_dir, filename)
+    def organize_gitignore(filePath: str) -> None:
         # check if target file is a gitignore file
-        if not _dir.endswith(".gitignore"):
-            raise FileNotFoundError("The file has to be gitignore!")
+        if not filePath.endswith(".gitignore"):
+            print("The file has to be gitignore!")
+            return
         # read content from gitignore file
-        with open(_dir, "r", encoding="utf-8") as f:
+        with open(filePath, "r", encoding="utf-8") as f:
             lines: list[str] = f.readlines()
         # making sure that the last line has \n symbol.
         # if not, then add one right now
@@ -38,5 +64,5 @@ class Organizer:
                 result_lines.append(key)
                 result_lines.extend(sorted(value))
         # write the data back to gitignore file
-        with open(_dir, "w+", encoding="utf-8") as f:
+        with open(filePath, "w+", encoding="utf-8") as f:
             f.writelines(result_lines)
