@@ -53,7 +53,7 @@ def cli() -> None:
     elif args.release:
         Builder.release(args.release)
     elif args.organize:
-        Organizer.organize_directory(args.organize)
+        Organizer.organize(args.organize)
     elif args.upgrade:
         PackageInstaller.upgrade(args.upgrade)
     elif args.fix:

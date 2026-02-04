@@ -5,19 +5,24 @@ from typing import Any
 
 class Organizer:
 
-    # organize directory
+    # organize file or directory
     @staticmethod
-    def organize_directory(directoryPath: str) -> None:
-        # iterate through all files in the directory
-        for root, _, files in os.walk(directoryPath):
-            for f in files:
-                file_path: str = os.path.join(root, f)
-                # organize json files
-                if f.endswith(".json"):
-                    Organizer.organize_json_file(file_path)
-                # organize gitignore files
-                elif f == ".gitignore":
-                    Organizer.organize_gitignore(file_path)
+    def organize(path: str) -> None:
+        # if path is a file, organize it directly
+        if os.path.isfile(path):
+            if path.endswith(".json"):
+                Organizer.organize_json_file(path)
+            elif path.endswith(".gitignore"):
+                Organizer.organize_gitignore(path)
+        # if path is a directory, iterate through all files
+        elif os.path.isdir(path):
+            for root, _, files in os.walk(path):
+                for f in files:
+                    file_path: str = os.path.join(root, f)
+                    if f.endswith(".json"):
+                        Organizer.organize_json_file(file_path)
+                    elif f == ".gitignore":
+                        Organizer.organize_gitignore(file_path)
 
     # organize json file
     @staticmethod
