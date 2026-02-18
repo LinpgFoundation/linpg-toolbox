@@ -1,9 +1,40 @@
+import fnmatch
 import json
 import os
 from typing import Any
 
 
 class Organizer:
+
+    # parse gitignore file and return a list of patterns
+    @staticmethod
+    def _parse_gitignore(gitignore_path: str) -> list[str]:
+        patterns: list[str] = []
+        if not os.path.isfile(gitignore_path):
+            return patterns
+        with open(gitignore_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                # skip empty lines and comments
+                if line and not line.startswith("#"):
+                    patterns.append(line)
+        return patterns
+
+    # check if a path should be ignored based on gitignore patterns
+    @staticmethod
+    def _is_ignored(
+        name: str, rel_path: str, is_dir: bool, patterns: list[str]
+    ) -> bool:
+        for pattern in patterns:
+            # strip trailing slash for matching, but remember if it's dir-only
+            dir_only: bool = pattern.endswith("/")
+            p: str = pattern.rstrip("/")
+            if dir_only and not is_dir:
+                continue
+            # match against both the name and relative path
+            if fnmatch.fnmatch(name, p) or fnmatch.fnmatch(rel_path, p):
+                return True
+        return False
 
     # organize file or directory
     @staticmethod
@@ -16,9 +47,28 @@ class Organizer:
                 Organizer.organize_gitignore(path)
         # if path is a directory, iterate through all files
         elif os.path.isdir(path):
-            for root, _, files in os.walk(path):
+            # parse gitignore patterns from the root directory
+            gitignore_patterns: list[str] = Organizer._parse_gitignore(
+                os.path.join(path, ".gitignore")
+            )
+            for root, dirs, files in os.walk(path):
+                # filter out ignored directories (modify in-place to prevent os.walk from descending)
+                dirs[:] = [
+                    d
+                    for d in dirs
+                    if not Organizer._is_ignored(
+                        d,
+                        os.path.relpath(os.path.join(root, d), path),
+                        True,
+                        gitignore_patterns,
+                    )
+                ]
                 for f in files:
                     file_path: str = os.path.join(root, f)
+                    rel_path: str = os.path.relpath(file_path, path)
+                    # skip files that match gitignore patterns
+                    if Organizer._is_ignored(f, rel_path, False, gitignore_patterns):
+                        continue
                     if f.endswith(".json"):
                         Organizer.organize_json_file(file_path)
                     elif f == ".gitignore":
