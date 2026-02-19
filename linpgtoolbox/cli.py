@@ -23,6 +23,11 @@ def cli() -> None:
     parser.add_argument("--fix", type=str, help="Create a source distribution")
     parser.add_argument("--select-py", type=str, help="Select the python version")
     parser.add_argument(
+        "--show-compile-messages",
+        action="store_true",
+        help="Show compile messages instead of progress bar",
+    )
+    parser.add_argument(
         "--platform", action="store_true", help="Print current platform information"
     )
     parser.add_argument(
@@ -40,9 +45,11 @@ def cli() -> None:
 
     # eacute operations
     if args.compile:
-        Builder.compile(args.compile)
+        Builder.compile(args.compile, show_compile_messages=args.show_compile_messages)
     elif args.install:
-        Builder.compile(args.install, upgrade=True)
+        Builder.compile(
+            args.install, upgrade=True, show_compile_messages=args.show_compile_messages
+        )
         Builder.remove("src")
     elif args.zip:
         Builder.zip(args.zip)

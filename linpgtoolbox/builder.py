@@ -9,12 +9,7 @@ from subprocess import check_call
 from tempfile import gettempdir
 from typing import Any, Final
 
-from ._execute import (
-    execute_python,
-    get_current_python_version,
-    is_using_windows,
-    set_python_version,
-)
+from ._execute import execute_python, get_current_python_version, is_using_windows
 from .pyinstaller import PackageInstaller, PyInstaller
 
 
@@ -128,6 +123,7 @@ class Builder:
         upgrade: bool = False,
         skip_compile: bool = False,
         show_success_message: bool = True,
+        show_compile_messages: bool = False,
     ) -> None:
         # make sure required libraries are installed
         PackageInstaller.install("setuptools")
@@ -226,9 +222,15 @@ class Builder:
             # 确保mypy已经安装
             PackageInstaller.install("mypy")
             # 编译源代码
-            execute_python(
-                cls.__PATH, "build_ext", "--build-lib", target_folder, cwd=source_folder
-            )
+            _compile_args: list[str] = [
+                cls.__PATH,
+                "build_ext",
+                "--build-lib",
+                target_folder,
+            ]
+            if show_compile_messages:
+                _compile_args.append("--show-compile-messages")
+            execute_python(*_compile_args, cwd=source_folder)
             # 删除缓存
             cls.__clean_up(source_folder)
             cls.remove(
