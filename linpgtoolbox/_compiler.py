@@ -116,7 +116,7 @@ if __name__ == "__main__":
             return
         bar_length: int = 40
         filled: int = int(bar_length * completed / total)
-        bar: str = "█" * filled + "░" * (bar_length - filled)
+        bar: str = "#" * filled + "-" * (bar_length - filled)
         percent: float = 100.0 * completed / total
         sys.stdout.write(f"\rCompiling: [{bar}] {percent:5.1f}% ({completed}/{total})")
         sys.stdout.flush()
