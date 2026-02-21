@@ -1,4 +1,6 @@
 import importlib.metadata
+import json
+import urllib.request
 
 from ._execute import execute_python
 
@@ -47,3 +49,36 @@ class PackageInstaller:
                     cls.install(name)
                 except Exception:
                     print(f"Warning: fail to update third party package <{name}>")
+
+    # get the currently installed version of linpgtoolbox
+    @staticmethod
+    def get_current_version() -> str:
+        return importlib.metadata.version("linpgtoolbox")
+
+    # check if a newer version is available on PyPI and offer to update
+    @classmethod
+    def check_for_update(cls) -> None:
+        pkg_name: str = "linpgtoolbox"
+        current: str = cls.get_current_version()
+        print(f"Current version: {current}")
+        try:
+            with urllib.request.urlopen(
+                f"https://pypi.org/pypi/{pkg_name}/json", timeout=10
+            ) as response:
+                latest: str = json.loads(response.read())["info"]["version"]
+        except Exception:
+            print("Failed to fetch latest version from PyPI.")
+            return
+        print(f"Latest version:  {latest}")
+        current_parts: tuple[int, ...] = tuple(int(x) for x in current.split("."))
+        latest_parts: tuple[int, ...] = tuple(int(x) for x in latest.split("."))
+        if current_parts >= latest_parts:
+            print("linpgtoolbox is up to date.")
+        else:
+            answer: str = input(
+                f"A newer version ({latest}) is available. Update now? [y/N] "
+            )
+            if answer.strip().lower() in ("y", "yes"):
+                cls.install(pkg_name)
+            else:
+                print("Update skipped.")

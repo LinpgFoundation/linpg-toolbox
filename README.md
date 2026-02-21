@@ -35,7 +35,7 @@ usage: linpgtb [-h] [--compile COMPILE] [--install INSTALL] [--pack PACK]
                [--upload UPLOAD] [--release RELEASE] [--organize ORGANIZE]
                [--upgrade UPGRADE] [--zip ZIP] [--fix FIX]
                [--select-py SELECT_PY] [--show-compile-messages] [--platform]
-               [--reinstall]
+               [--reinstall] [--check-update]
 
 options:
   -h, --help            show this help message and exit
@@ -58,4 +58,5 @@ options:
                         Show compile messages instead of progress bar
   --platform            Print current platform information
   --reinstall           Reinstall Linpg Toolbox (Debug Purpose)
+  --check-update        Check if a newer version is available on PyPI
 ```

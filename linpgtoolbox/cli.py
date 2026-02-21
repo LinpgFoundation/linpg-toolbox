@@ -35,6 +35,11 @@ def cli() -> None:
         action="store_true",
         help="Reinstall Linpg Toolbox (Debug Purpose)",
     )
+    parser.add_argument(
+        "--check-update",
+        action="store_true",
+        help="Check if a newer version is available on PyPI",
+    )
 
     # get arguments
     args = parser.parse_args()
@@ -69,6 +74,8 @@ def cli() -> None:
         print(f"python[{sys.platform}]-{sys.version}")
     elif args.reinstall:
         PackageInstaller.reinstall("linpgtoolbox")
+    elif args.check_update:
+        PackageInstaller.check_for_update()
 
 
 if __name__ == "__main__":
