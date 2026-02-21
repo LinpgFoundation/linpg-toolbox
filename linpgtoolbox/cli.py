@@ -9,7 +9,7 @@ from .pkginstaller import PackageInstaller
 
 def cli() -> None:
     # create a ArgumentParser for taking argument inputs
-    parser = argparse.ArgumentParser()
+    parser: argparse.ArgumentParser = argparse.ArgumentParser()
     parser.add_argument("--compile", "-c", type=str, help="Compile project")
     parser.add_argument("--install", "-i", type=str, help="Install project")
     parser.add_argument("--pack", "-p", type=str, help="Pack project")
@@ -42,7 +42,7 @@ def cli() -> None:
     )
 
     # get arguments
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
 
     # override default python version if given
     if args.select_py:

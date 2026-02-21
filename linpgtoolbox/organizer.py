@@ -37,18 +37,26 @@ class Organizer:
         return False
 
     # organize file or directory
-    @staticmethod
-    def organize(path: str) -> None:
+    @classmethod
+    def organize(cls, path: str) -> None:
+        changed: int = 0
+        unchanged: int = 0
         # if path is a file, organize it directly
         if os.path.isfile(path):
             if path.endswith(".json"):
-                Organizer.organize_json_file(path)
+                if cls.organize_json_file(path):
+                    changed += 1
+                else:
+                    unchanged += 1
             elif path.endswith(".gitignore"):
-                Organizer.organize_gitignore(path)
+                if cls.organize_gitignore(path):
+                    changed += 1
+                else:
+                    unchanged += 1
         # if path is a directory, iterate through all files
         elif os.path.isdir(path):
             # parse gitignore patterns from the root directory
-            gitignore_patterns: list[str] = Organizer._parse_gitignore(
+            gitignore_patterns: list[str] = cls._parse_gitignore(
                 os.path.join(path, ".gitignore")
             )
             for root, dirs, files in os.walk(path):
@@ -56,7 +64,7 @@ class Organizer:
                 dirs[:] = [
                     d
                     for d in dirs
-                    if not Organizer._is_ignored(
+                    if not cls._is_ignored(
                         d,
                         os.path.relpath(os.path.join(root, d), path),
                         True,
@@ -67,35 +75,60 @@ class Organizer:
                     file_path: str = os.path.join(root, f)
                     rel_path: str = os.path.relpath(file_path, path)
                     # skip files that match gitignore patterns
-                    if Organizer._is_ignored(f, rel_path, False, gitignore_patterns):
+                    if cls._is_ignored(f, rel_path, False, gitignore_patterns):
                         continue
+                    result: bool = False
                     if f.endswith(".json"):
-                        Organizer.organize_json_file(file_path)
+                        result = cls.organize_json_file(file_path)
                     elif f == ".gitignore":
-                        Organizer.organize_gitignore(file_path)
+                        result = cls.organize_gitignore(file_path)
+                    else:
+                        continue
+                    if result:
+                        changed += 1
+                    else:
+                        unchanged += 1
+        # print summary
+        if changed == 0 and unchanged == 0:
+            print("No supported files found.")
+        elif changed == 0:
+            print(f"{unchanged} file{'s' if unchanged != 1 else ''} left unchanged.")
+        elif unchanged == 0:
+            print(f"{changed} file{'s' if changed != 1 else ''} organized.")
+        else:
+            print(
+                f"{changed} file{'s' if changed != 1 else ''} organized,"
+                f" {unchanged} file{'s' if unchanged != 1 else ''} left unchanged."
+            )
 
-    # organize json file
+    # organize json file, return True if content changed
     @staticmethod
-    def organize_json_file(filePath: str) -> None:
-        # read content from json file
+    def organize_json_file(filePath: str) -> bool:
+        # read original content
         with open(filePath, "r", encoding="utf-8") as f:
-            data: Any = json.load(f)
-        # write the data back to json file
-        with open(filePath, "w+", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False, sort_keys=True)
-        # print confirmation message
-        print(f"Organized JSON file: {filePath}")
+            original: str = f.read()
+        # generate organized content
+        data: Any = json.loads(original)
+        organized: str = json.dumps(data, indent=4, ensure_ascii=False, sort_keys=True)
+        # only write if content changed
+        if original != organized:
+            with open(filePath, "w+", encoding="utf-8") as f:
+                f.write(organized)
+            print(f"Organized JSON file: {filePath}")
+            return True
+        return False
 
-    # organize gitignore
+    # organize gitignore, return True if content changed
     @staticmethod
-    def organize_gitignore(filePath: str) -> None:
+    def organize_gitignore(filePath: str) -> bool:
         # check if target file is a gitignore file
         if not filePath.endswith(".gitignore"):
             print("The file has to be gitignore!")
-            return
+            return False
         # read content from gitignore file
         with open(filePath, "r", encoding="utf-8") as f:
-            lines: list[str] = f.readlines()
+            original: str = f.read()
+        lines: list[str] = original.splitlines(keepends=True)
         # making sure that the last line has \n symbol.
         # if not, then add one right now
         if not lines[-1].endswith("\n"):
@@ -120,9 +153,11 @@ class Organizer:
                 result_lines.append("\n")
                 result_lines.append(key)
                 result_lines.extend(sorted(value))
-        # write the data back to gitignore file
-        with open(filePath, "w+", encoding="utf-8") as f:
-            f.writelines(result_lines)
-
-        # print confirmation message
-        print(f"Organized .gitignore file: {filePath}")
+        # only write if content changed
+        organized: str = "".join(result_lines)
+        if original != organized:
+            with open(filePath, "w+", encoding="utf-8") as f:
+                f.write(organized)
+            print(f"Organized .gitignore file: {filePath}")
+            return True
+        return False
