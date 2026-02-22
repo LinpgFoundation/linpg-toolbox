@@ -16,12 +16,13 @@ pip install linpgtoolbox
 
 The toolkit contains the following classes / 工具包包含以下程序:
 
-| Class            | Functionalities                                              | 功能                                            |
-| ---------------- | ------------------------------------------------------------ | ----------------------------------------------- |
-| Builder          | Automates the process of compiling and uploading your personal package. | 自动化编译并上传你个人库的流程。                |
-| Organizer        | An organizing tool that formats JSON and .gitignore files, with directory-level support that respects .gitignore patterns. | 整理工具，可以格式化JSON和.gitignore文件，支持目录级别整理并遵循.gitignore规则。 |
-| PackageInstaller | A simple tool to install, upgrade and uninstall third-party python package(s). | 第三方python库安装以及卸载工具。                |
-| PyInstaller      | Generate a PyInstaller hook for your personal package.       | 为你的个人库快速生成一个PyInstaller的钩子。     |
+| Class            | Functionalities                                              | 功能                                        |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------- |
+| Builder          | Automates the process of compiling and uploading your personal package. | 自动化编译并上传你个人库的流程。            |
+| Organizer        | An organizing tool that formats JSON and .gitignore files, with directory-level support that respects .gitignore patterns, or organizes your gitignore file(s). | 整理工具，可以格式化JSON和.gitignore文件，支持目录级别整理并遵循.gitignore规则，也可以整理你的gitignore文件。 |
+| PackageInstaller | A simple tool to install, upgrade and uninstall third-party python package(s). | 第三方python库安装以及卸载工具。            |
+| PyInstaller      | Generate a PyInstaller hook for your personal package.       | 为你的个人库快速生成一个PyInstaller的钩子。 |
+| ImageResizer     | Resize images by exact dimensions or percentage via CLI.     | 通过命令行按精确尺寸或百分比调整图片大小。  |
 
 # Command line usage / 命令行
 
@@ -31,11 +32,7 @@ This project can be used as either a Python library or a command line utility. F
 
 ```text
 $ linpgtb --help
-usage: linpgtb [-h] [--compile COMPILE] [--install INSTALL] [--pack PACK]
-               [--upload UPLOAD] [--release RELEASE] [--organize ORGANIZE]
-               [--upgrade UPGRADE] [--zip ZIP] [--fix FIX]
-               [--select-py SELECT_PY] [--show-compile-messages] [--platform]
-               [--reinstall] [--check-update]
+usage: linpgtb [-h] [--compile COMPILE] [--install INSTALL] [--pack PACK] [--upload UPLOAD] [--release RELEASE] [--organize ORGANIZE] [--upgrade UPGRADE] [--zip ZIP] [--fix FIX] [--select-py SELECT_PY] [--show-compile-messages] [--platform] [--resize RESIZE] [--size SIZE] [--output OUTPUT] [--reinstall] [--check-update]
 
 options:
   -h, --help            show this help message and exit
@@ -57,6 +54,11 @@ options:
   --show-compile-messages
                         Show compile messages instead of progress bar
   --platform            Print current platform information
+  --resize RESIZE       Resize an image file
+  --size SIZE           Target size: WxH, N%, Wx (width only), or xH (height only)
+  --output OUTPUT       Output path for resized image
   --reinstall           Reinstall Linpg Toolbox (Debug Purpose)
   --check-update        Check if a newer version is available on PyPI
 ```
+
+> **Note:** Image resizing requires Pillow. Install it with `pip install linpgtoolbox[images]`.
