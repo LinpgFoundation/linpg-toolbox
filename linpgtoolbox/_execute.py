@@ -13,7 +13,7 @@ def is_using_windows() -> bool:
     return sys.platform.startswith("win")
 
 
-# execute a python commend
+# execute a python command
 def execute_python(*cmd: str, cwd: str | None = None) -> None:
     check_call(
         (

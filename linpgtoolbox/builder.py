@@ -102,7 +102,7 @@ class Builder:
                 else:
                     _index += 1
             # 如果模块文件夹中只剩__init__.py，则将文件夹转换成一个python文件
-            if len(glob(os.path.join(_dir_path, "*"))) <= 1:
+            if len([f for f in os.listdir(_dir_path) if f != "__pycache__"]) <= 1:
                 for i in range(len(_lines)):
                     if _lines[i].lstrip().startswith("from .."):
                         _lines[i] = _lines[i].replace("from ..", "from .")
@@ -145,7 +145,7 @@ class Builder:
             _config.update(data.get("tool", {}).get("linpgtoolbox", {}))
             _options.update(_config.get("options", {}))
             project_name: str = str(data["project"]["name"])
-        # copy repo to detonation folder
+        # copy repo to destination folder
         source_path_in_target_folder: str = os.path.join(
             abs_target_folder, project_name
         )

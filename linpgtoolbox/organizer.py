@@ -129,6 +129,9 @@ class Organizer:
         with open(filePath, "r", encoding="utf-8") as f:
             original: str = f.read()
         lines: list[str] = original.splitlines(keepends=True)
+        # skip empty files
+        if not lines:
+            return False
         # making sure that the last line has \n symbol.
         # if not, then add one right now
         if not lines[-1].endswith("\n"):

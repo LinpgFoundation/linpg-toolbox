@@ -7,7 +7,7 @@ from ._execute import execute_python
 
 class PackageInstaller:
 
-    # run pip commend
+    # run pip command
     @staticmethod
     def pip(*cmd: str, cwd: str | None = None) -> None:
         execute_python("-m", "pip", *cmd, cwd=cwd)
