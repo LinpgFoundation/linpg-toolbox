@@ -8,11 +8,11 @@ if TYPE_CHECKING:
 import mypy.stubgen
 from Cython.Build import cythonize  # type: ignore
 
-# setuptools.setup import不可以在Cython.Build之后
+# setuptools.setup import cannot be after Cython.Build
 from setuptools import setup
 
 
-# 编译方法
+# Compile method
 def _compile_file(
     _source_folder: str,
     _path: str,
@@ -21,7 +21,7 @@ def _compile_file(
     _silent: bool = False,
     _progress_counter: "Synchronized[int] | None" = None,
 ) -> None:
-    # 如果静默模式，则重定向stdout和stderr到devnull
+    # If silent mode, redirect stdout and stderr to devnull
     _original_stdout = sys.stdout
     _original_stderr = sys.stderr
     _devnull_out: IO[str] | None = None
@@ -37,7 +37,7 @@ def _compile_file(
                 _path, show_all_warnings=_debug_mode, annotate=_debug_mode
             )
         )
-        # 删除c/cpp文件
+        # Delete c/cpp files
         if not _keep_c:
             file_path_without_ext: str = _path[: _path.rfind(".")]
             _c_file: str = file_path_without_ext + ".c"
@@ -46,7 +46,7 @@ def _compile_file(
                 os.remove(_c_file)
             elif os.path.exists(_cpp_file):
                 os.remove(_cpp_file)
-        # 生成pyi后缀的typing提示文件
+        # Generate .pyi typing hint files
         if _path.endswith(".py"):
             mypy.stubgen.main(
                 [
@@ -57,14 +57,14 @@ def _compile_file(
                     "--include-private",
                 ]
             )
-        # 删除原始py文件（仅在以上步骤全部成功后执行）
+        # Delete original py file (only executed after all above steps succeed)
         os.remove(_path)
     finally:
-        # 更新进度计数器
+        # Update progress counter
         if _progress_counter is not None:
             with _progress_counter.get_lock():
                 _progress_counter.value += 1
-        # 恢复stdout和stderr
+        # Restore stdout and stderr
         if _silent:
             sys.stdout = _original_stdout
             sys.stderr = _original_stderr
@@ -83,34 +83,34 @@ if __name__ == "__main__":
     from tempfile import gettempdir
     from typing import Any
 
-    # 加载全局参数
+    # Load global parameters
     _data_path: str = os.path.join(gettempdir(), "linpgtoolbox_builder_cache.json")
     with open(_data_path, "r", encoding="utf-8") as f:
         _data: dict[str, Any] = json.load(f)
-        # 是否启用debug模式
+        # Whether to enable debug mode
         _debug_mode: bool = bool(_data["debug_mode"])
-        # 是否保存c文件
+        # Whether to keep c files
         _keep_c: bool = bool(_data["keep_c"])
-        # 是否启用多线程
+        # Whether to enable multiprocessing
         _enable_multiprocessing: bool = bool(_data["enable_multiprocessing"])
-        # 储存源代码的文件的路径
+        # Path to store source code files
         _source_folder: str = str(_data["source_folder"])
-        # 需要忽略的文件的关键词
+        # Keywords of files to ignore
         _ignores: tuple[str, ...] = tuple(_data["ignores"])
 
-    # 是否显示编译信息（通过命令行参数开启，多进程时默认关闭，显示进度条）
+    # Whether to show compile messages (enabled via command line argument, default off for multiprocessing, shows progress bar)
     _show_compile_messages: bool = "--show-compile-messages" in sys.argv
 
-    # 移除参数文件
+    # Remove parameter file
     os.remove(_data_path)
 
-    # 是否静默模式（多进程且未要求显示编译信息时启用）
+    # Whether silent mode (enabled when multiprocessing and compile messages are not requested)
     _silent: bool = _enable_multiprocessing and not _show_compile_messages
 
-    # 共享进度计数器
+    # Shared progress counter
     _progress_counter = Value("i", 0)
 
-    # 显示进度条
+    # Show progress bar
     def _print_progress_bar(completed: int, total: int) -> None:
         if total == 0:
             return
@@ -123,24 +123,24 @@ if __name__ == "__main__":
         if completed >= total:
             sys.stdout.write("\n")
 
-    # 编译进程管理模组
+    # Compile process management module
     class _CompileProcessManager:
-        # 储存进程的列表
+        # List to store processes
         __processes: list[Process] = []
 
-        # 是否忽略文件
+        # Whether to ignore file
         @classmethod
         def __if_ignore(cls, _path: str) -> bool:
             return any(re.match(pattern, _path) for pattern in _ignores)
 
-        # 创建编译进程
+        # Create compile process
         @classmethod
         def __generate_process(cls, _path: str) -> None:
             if not os.path.isdir(_path):
                 if (
                     _path.endswith(".py") or _path.endswith(".pyx")
                 ) and not cls.__if_ignore(_path):
-                    # 如果使用多线程
+                    # If using multiprocessing
                     if _enable_multiprocessing is True:
                         cls.__processes.append(
                             Process(
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                                 ),
                             )
                         )
-                    # 如果不使用多线程
+                    # If not using multiprocessing
                     else:
                         _compile_file(_source_folder, _path, _keep_c, _debug_mode)
             elif "pyinstaller" not in _path and "pycache" not in _path:
@@ -163,12 +163,12 @@ if __name__ == "__main__":
                     for file_in_dir in glob(os.path.join(_path, "*")):
                         cls.__generate_process(file_in_dir)
 
-        # 获取总进程数
+        # Get total number of processes
         @classmethod
         def total(cls) -> int:
             return len(cls.__processes)
 
-        # 初始化编译进程
+        # Initialize compile processes
         @classmethod
         def init(cls) -> None:
             if os.path.exists(_source_folder):
@@ -178,24 +178,24 @@ if __name__ == "__main__":
                 if os.path.exists(_source_file):
                     cls.__generate_process(_source_file)
 
-        # 开始所有的进程
+        # Start all processes
         @classmethod
         def start(cls) -> None:
             for _process in cls.__processes:
                 _process.start()
 
-        # 确保所有进程执行完后才退出
+        # Ensure all processes finish before exiting
         @classmethod
         def join(cls) -> None:
             for _process in cls.__processes:
                 _process.join()
 
-    # 初始化，创建进程
+    # Initialize, create processes
     _CompileProcessManager.init()
-    # 启动所有进程
+    # Start all processes
     _CompileProcessManager.start()
 
-    # 如果静默模式，则显示进度条
+    # If silent mode, show progress bar
     if _silent and _CompileProcessManager.total() > 0:
         _total: int = _CompileProcessManager.total()
         _print_progress_bar(0, _total)
@@ -203,5 +203,5 @@ if __name__ == "__main__":
             _print_progress_bar(_progress_counter.value, _total)
             time.sleep(0.2)
         _print_progress_bar(_total, _total)
-    # 在进程结束前不要退出
+    # Do not exit before processes finish
     _CompileProcessManager.join()
