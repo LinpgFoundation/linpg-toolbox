@@ -6,7 +6,13 @@ from typing import Any
 
 class ImageResizer:
     @classmethod
-    def resize(cls, image_path: str, size: str, output: str | None = None) -> None:
+    def resize(
+        cls,
+        image_path: str,
+        size: str,
+        output: str | None = None,
+        overwrite: bool = False,
+    ) -> None:
         try:
             from PIL import Image
         except ImportError:
@@ -43,6 +49,7 @@ class ImageResizer:
                         os.path.join(image_path, file_name),
                         size,
                         os.path.join(output, file_name) if output else None,
+                        overwrite=overwrite,
                     )
             return
 
@@ -55,6 +62,8 @@ class ImageResizer:
         pct_match = re.fullmatch(r"(\d+)%", size)
         width_match = re.fullmatch(r"(\d+)x", size)
         height_match = re.fullmatch(r"x(\d+)", size)
+        width_limit_match = re.fullmatch(r"([<>])(\d+)x", size)
+        height_limit_match = re.fullmatch(r"([<>])x(\d+)", size)
 
         with Image.open(image_path) as img:
             if dim_match:
@@ -73,9 +82,27 @@ class ImageResizer:
                 height = int(height_match.group(1))
                 width = round(img.width * height / img.height)
                 suffix = f"_{width}x{height}"
+            elif width_limit_match:
+                op = width_limit_match.group(1)
+                target_w = int(width_limit_match.group(2))
+                width = (
+                    min(img.width, target_w) if op == "<" else max(img.width, target_w)
+                )
+                height = round(img.height * width / img.width)
+                suffix = f"_{width}x{height}"
+            elif height_limit_match:
+                op = height_limit_match.group(1)
+                target_h = int(height_limit_match.group(2))
+                height = (
+                    min(img.height, target_h)
+                    if op == "<"
+                    else max(img.height, target_h)
+                )
+                width = round(img.width * height / img.height)
+                suffix = f"_{width}x{height}"
             else:
                 raise ValueError(
-                    f"Invalid size format: '{size}'. Use WxH, N%, Wx, or xH"
+                    f"Invalid size format: '{size}'. Use WxH, N%, Wx, xH, <Wx, >Wx, <xH, or >xH"
                 )
 
             if (
@@ -90,17 +117,20 @@ class ImageResizer:
 
             resized = img.resize((width, height), Image.Resampling.LANCZOS)
 
-            # determine output path
-            if output is None:
+        # determine output path
+        if output is None:
+            if overwrite:
+                output = image_path
+            else:
                 name, ext = os.path.splitext(image_path)
                 output = f"{name}{suffix}{ext}"
 
-            # Save with highest quality settings
-            save_kwargs: dict[str, Any] = {}
-            if output.lower().endswith((".jpg", ".jpeg")):
-                save_kwargs.update({"quality": 100, "subsampling": 0})
-            elif output.lower().endswith(".webp"):
-                save_kwargs.update({"quality": 100, "lossless": True})
+        # Save with highest quality settings
+        save_kwargs: dict[str, Any] = {"quality": 100}
+        if output.lower().endswith((".jpg", ".jpeg")):
+            save_kwargs.update({"subsampling": 0})
+        elif output.lower().endswith(".webp"):
+            save_kwargs.update({"lossless": True})
 
-            resized.save(output, **save_kwargs)
-            print(f"Saved resized image to: {output}")
+        resized.save(output, **save_kwargs)
+        print(f"Saved resized image to: {output}")

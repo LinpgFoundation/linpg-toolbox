@@ -22,7 +22,7 @@ The toolkit contains the following classes / 工具包包含以下程序:
 | Organizer        | An organizing tool that formats JSON and .gitignore files, with directory-level support that respects .gitignore patterns, or organizes your gitignore file(s). | 整理工具，可以格式化JSON和.gitignore文件，支持目录级别整理并遵循.gitignore规则，也可以整理你的gitignore文件。 |
 | PackageInstaller | A simple tool to install, upgrade and uninstall third-party python package(s). | 第三方python库安装以及卸载工具。            |
 | PyInstaller      | Generate a PyInstaller hook for your personal package.       | 为你的个人库快速生成一个PyInstaller的钩子。 |
-| ImageResizer     | Resize images by exact dimensions or percentage via CLI.     | 通过命令行按精确尺寸或百分比调整图片大小。  |
+| ImageResizer     | Resize images by dimensions, percentage, or constraints via CLI. | 通过命令行按尺寸、百分比或限制调整图片大小。 |
 
 # Command line usage / 命令行
 
@@ -55,8 +55,9 @@ options:
                         Show compile messages instead of progress bar
   --platform            Print current platform information
   --resize RESIZE       Resize an image file
-  --size SIZE           Target size: WxH, N%, Wx (width only), or xH (height only)
+  --size SIZE           Target size: WxH, N%, Wx, xH, <Wx, >Wx, <xH, or >xH
   --output OUTPUT       Output path for resized image
+  --overwrite           Overwrite the original image file
   --reinstall           Reinstall Linpg Toolbox (Debug Purpose)
   --check-update        Check if a newer version is available on PyPI
 ```

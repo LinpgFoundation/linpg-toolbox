@@ -35,9 +35,14 @@ def cli() -> None:
     parser.add_argument(
         "--size",
         type=str,
-        help="Target size: WxH, N%%, Wx (width only), or xH (height only)",
+        help="Target size: WxH, N%%, Wx, xH, <Wx, >Wx, <xH, or >xH",
     )
     parser.add_argument("--output", type=str, help="Output path for resized image")
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite the original image file",
+    )
     parser.add_argument(
         "--reinstall",
         action="store_true",
@@ -82,7 +87,7 @@ def cli() -> None:
         if not args.size:
             print("Error: --size is required when using --resize")
             sys.exit(1)
-        ImageResizer.resize(args.resize, args.size, args.output)
+        ImageResizer.resize(args.resize, args.size, args.output, args.overwrite)
     elif args.platform:
         print(f"python[{sys.platform}]-{sys.version}")
     elif args.reinstall:
