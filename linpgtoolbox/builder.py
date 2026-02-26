@@ -9,21 +9,16 @@ from subprocess import check_call
 from tempfile import gettempdir
 from typing import Any, Final
 
-from ._execute import (
-    execute_python,
-    get_current_python_version,
-    is_using_windows,
-    set_python_version,
-)
+from ._execute import execute_python, get_current_python_version, is_using_windows
 from .pyinstaller import PackageInstaller, PyInstaller
 
 
-# 搭建和打包文件的系统
+# System for building and packing files
 class Builder:
     __PATH: Final[str] = os.path.join(os.path.dirname(__file__), "_compiler.py")
     __CACHE_NEED_REMOVE: Final[tuple[str, ...]] = ("dist", "build")
 
-    # 如果指定文件夹存在，则移除
+    # If specified folder exists, remove it
     @staticmethod
     def remove(*path: str, cwd: str | None = None) -> None:
         for _path in path:
@@ -32,7 +27,7 @@ class Builder:
             if os.path.exists(_path):
                 shutil.rmtree(_path) if os.path.isdir(_path) else os.remove(_path)
 
-    # 复制文件
+    # Copy files
     @classmethod
     def copy(
         cls,
@@ -43,16 +38,16 @@ class Builder:
     ) -> None:
         for the_file in files:
             _target: str = os.path.basename(the_file)
-            # if user customize relative output path
+            # If user customizes relative output path
             if "->" in the_file:
                 the_file, _target = the_file.split("->")
-            # make sure files are copied to target folder
+            # Make sure files are copied to target folder
             _target = os.path.join(target_folder, _target.strip())
-            # remove unintentional empty spaces
+            # Remove unintentional empty spaces
             the_file = (
                 the_file.strip() if cwd is None else os.path.join(cwd, the_file.strip())
             )
-            # 如果是文件夹
+            # If it is a directory
             if os.path.isdir(the_file):
                 cls.remove(_target)
                 shutil.copytree(the_file, _target)
@@ -61,20 +56,20 @@ class Builder:
             if move:
                 cls.remove(the_file)
 
-    # delete all the cache
+    # Delete all the cache
     @classmethod
     def __clean_up(cls, cwd: str | None = None) -> None:
         cls.remove(*cls.__CACHE_NEED_REMOVE, cwd=cwd)
 
-    # delete the dir and create a new one with same name
+    # Delete the dir and create a new one with same name
     @classmethod
     def __remake_dir(cls, path: str) -> None:
-        # delete the dir
+        # Delete the dir
         cls.remove(path)
-        # create a new one with same name
+        # Create a new one with same name
         os.makedirs(path)
 
-    # 合并模块
+    # Combine modules
     @classmethod
     def __combine(cls, _dir_path: str) -> None:
         if os.path.isdir(_dir_path) and os.path.exists(
@@ -106,20 +101,20 @@ class Builder:
                         _index += 1
                 else:
                     _index += 1
-            # 如果模块文件夹中只剩__init__.py，则将文件夹转换成一个python文件
-            if len(glob(os.path.join(_dir_path, "*"))) <= 1:
+            # If only __init__.py remains in the module folder, convert the folder to a python file
+            if len([f for f in os.listdir(_dir_path) if f != "__pycache__"]) <= 1:
                 for i in range(len(_lines)):
                     if _lines[i].lstrip().startswith("from .."):
                         _lines[i] = _lines[i].replace("from ..", "from .")
                 with open(os.path.join(f"{_dir_path}.py"), "w", encoding="utf-8") as f:
                     f.writelines(_lines)
                 shutil.rmtree(_dir_path)
-            # 否则则直接将内容写入原__init__.py文件
+            # Otherwise write content directly to original __init__.py file
             else:
                 with open(init_file_path, "w", encoding="utf-8") as f:
                     f.writelines(_lines)
 
-    # 编译
+    # Compile
     @classmethod
     def compile(
         cls,
@@ -128,20 +123,21 @@ class Builder:
         upgrade: bool = False,
         skip_compile: bool = False,
         show_success_message: bool = True,
+        show_compile_messages: bool = False,
     ) -> None:
-        # make sure required libraries are installed
+        # Make sure required libraries are installed
         PackageInstaller.install("setuptools")
         PackageInstaller.install("cython")
-        # convert to abs path
+        # Convert to abs path
         source_folder = os.path.abspath(source_folder)
-        # remove cache folder
+        # Remove cache folder
         abs_target_folder: str = os.path.join(source_folder, target_folder)
         cls.remove(abs_target_folder)
-        # make sure pyproject.toml exists
+        # Make sure pyproject.toml exists
         pyproject_path: str = os.path.join(source_folder, "pyproject.toml")
         if not os.path.exists(pyproject_path):
             raise FileNotFoundError("Cannot find pyproject.toml!")
-        # load config for linpgtoolbox
+        # Load config for linpgtoolbox
         _config: dict[str, Any] = {}
         _options: dict[str, Any] = {}
         with open(pyproject_path, "rb") as f:
@@ -149,7 +145,7 @@ class Builder:
             _config.update(data.get("tool", {}).get("linpgtoolbox", {}))
             _options.update(_config.get("options", {}))
             project_name: str = str(data["project"]["name"])
-        # copy repo to detonation folder
+        # Copy repo to destination folder
         source_path_in_target_folder: str = os.path.join(
             abs_target_folder, project_name
         )
@@ -158,13 +154,13 @@ class Builder:
             source_path_in_target_folder,
             ignore=shutil.ignore_patterns(".git", "__pycache__", ".mypy_cache"),
         )
-        # copy the files that are required for compiling
+        # Copy the files that are required for compiling
         cls.copy(
             tuple(_config.get("requires", tuple())),
             source_path_in_target_folder,
             cwd=source_folder,
         )
-        # 如果开启了智能模块合并模式
+        # If smart module combination mode is enabled
         smart_auto_module_combine: str = _options.get(
             "smart_auto_module_combine", "disable"
         )
@@ -173,7 +169,7 @@ class Builder:
                 cls.__combine(_path)
         if smart_auto_module_combine == "all_in_one":
             cls.__combine(source_path_in_target_folder)
-        # 如果目标文件夹有cmake文件
+        # If target folder has cmake file
         if (
             os.path.exists(
                 CMakeListsFilePath := os.path.join(
@@ -182,22 +178,22 @@ class Builder:
             )
             and _options.get("auto_cmake", False) is True
         ):
-            # create a temporary build folder
+            # Create a temporary build folder
             cmake_build_dir: Final[str] = os.path.join(
                 source_path_in_target_folder, "build"
             )
             cls.__remake_dir(cmake_build_dir)
-            # make project
+            # Make project
             check_call(["cmake", ".."], cwd=cmake_build_dir)
             check_call(
                 ["cmake", "--build", ".", "--config", "Release"], cwd=cmake_build_dir
             )
-            # copy compiled python files (windows)
+            # Copy compiled python files (windows)
             cls.copy(
                 tuple(glob(os.path.join(cmake_build_dir, "Release", "*.pyd"))),
                 source_path_in_target_folder,
             )
-            # copy compiled python files (linux)
+            # Copy compiled python files (linux)
             cls.copy(
                 tuple(glob(os.path.join(cmake_build_dir, "*.so"))),
                 source_path_in_target_folder,
@@ -206,7 +202,7 @@ class Builder:
             cls.remove(CMakeListsFilePath)
 
         if not skip_compile:
-            # 把数据写入缓存文件以供编译器读取
+            # Write data to cache file for compiler to read
             builder_options: dict[str, Any] = {
                 "source_folder": source_path_in_target_folder,
                 "ignores": _config.get("ignores", tuple()),
@@ -223,33 +219,39 @@ class Builder:
                 encoding="utf-8",
             ) as f:
                 dump(builder_options, f)
-            # 确保mypy已经安装
+            # Ensure mypy is installed
             PackageInstaller.install("mypy")
-            # 编译源代码
-            execute_python(
-                cls.__PATH, "build_ext", "--build-lib", target_folder, cwd=source_folder
-            )
-            # 删除缓存
+            # Compile source code
+            _compile_args: list[str] = [
+                cls.__PATH,
+                "build_ext",
+                "--build-lib",
+                target_folder,
+            ]
+            if show_compile_messages:
+                _compile_args.append("--show-compile-messages")
+            execute_python(*_compile_args, cwd=source_folder)
+            # Delete cache
             cls.__clean_up(source_folder)
             cls.remove(
                 *_config.get("cache_needs_removal", tuple()),
                 cwd=source_path_in_target_folder,
             )
 
-        # 复制额外文件
+        # Copy extra files
         cls.copy(
             tuple(_config.get("includes", tuple())),
             source_path_in_target_folder,
             cwd=source_folder,
         )
-        # 写入默认的PyInstaller程序
+        # Write default PyInstaller program
         if _options.get("include_pyinstaller", False) is True:
             PyInstaller.generate_hook(
                 os.path.basename(source_folder),
                 source_path_in_target_folder,
                 _config.get("hidden_imports", []),
             )
-        # 创建py.typed文件
+        # Create py.typed file
         with open(
             os.path.join(
                 (
@@ -267,31 +269,31 @@ class Builder:
                     "More information can be found here: https://peps.python.org/pep-0561/\n",
                 )
             )
-        # 删除在sitepackages中的旧build，同时复制新的build
+        # Delete old build in sitepackages and copy new build
         if upgrade is True:
-            # 移除旧的build
+            # Remove old build
             PackageInstaller.uninstall(project_name)
-            # 安装新的build
+            # Install new build
             PackageInstaller.install(source_folder)
-        # 删除build文件夹
+        # Delete build folder
         cls.remove("build", cwd=source_folder)
-        # 提示编译完成
+        # Prompt compilation complete
         if show_success_message:
             print("\n--------------------Done!--------------------\n")
 
-    # 构建最新的release
+    # Build the latest release
     @classmethod
     def pack(cls, path: str, os_specific: bool = True) -> None:
-        # 升级build工具
+        # Upgrade build tool
         PackageInstaller.install("build")
-        # 升级wheel工具
+        # Upgrade wheel tool
         PackageInstaller.install("wheel")
-        # 打包文件
+        # Pack files
         execute_python("-m", "build", "--no-isolation", cwd=path)
-        # if the project is not os specific, then rename are not needed
+        # If the project is not os specific, then renaming is not needed
         if not os_specific:
             return
-        # 根据python_ver以及编译环境重命名
+        # Rename based on python_ver and compilation environment
         version_info: list[str] = get_current_python_version()
         python_ver: str = f"cp{version_info[0]}{version_info[1]}"
         key_word: str = f"py{version_info[0]}-none-any.whl"
@@ -317,10 +319,10 @@ class Builder:
                 ),
             )
 
-    # upload the packaged project
+    # Upload the packaged project
     @classmethod
     def upload(cls, path: str, confirm: bool = True) -> None:
-        # 要求用户确认dist文件夹中的打包好的文件之后在继续
+        # Ask user to confirm packed files in dist folder before continuing
         if (
             not confirm
             or input(
@@ -328,20 +330,20 @@ class Builder:
             )
             == "Y"
         ):
-            # 升级twine
+            # Upgrade twine
             PackageInstaller.install("twine")
-            # 用twine上传文件
+            # Upload files using twine
             execute_python("-m", "twine", "upload", "dist/*", cwd=path)
-        # 删除缓存
+        # Delete cache
         cls.__clean_up(os.path.dirname(path))
 
-    # pack and upload project
+    # Pack and upload project
     @classmethod
     def release(cls, path: str) -> None:
         cls.pack(path)
         cls.upload(path)
 
-    # zip project source code
+    # Zip project source code
     @classmethod
     def zip(cls, path: str) -> None:
         cls.compile(path, skip_compile=True)

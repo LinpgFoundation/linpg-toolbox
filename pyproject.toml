@@ -23,7 +23,10 @@ license-files = ["LICEN[CS]E*"]
 name = "linpgtoolbox"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "25.11"
+version = "26.2"
+
+[project.optional-dependencies]
+images = ["Pillow"]
 
 [project.scripts]
 linpgtb = "linpgtoolbox.cli:cli"
