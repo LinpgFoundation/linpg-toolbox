@@ -32,7 +32,7 @@ This project can be used as either a Python library or a command line utility. F
 
 ```text
 $ linpgtb --help
-usage: linpgtb [-h] [--compile COMPILE] [--install INSTALL] [--pack PACK] [--upload UPLOAD] [--release RELEASE] [--organize ORGANIZE] [--upgrade UPGRADE] [--zip ZIP] [--fix FIX] [--select-py SELECT_PY] [--show-compile-messages] [--platform] [--resize RESIZE] [--size SIZE] [--output OUTPUT] [--reinstall] [--check-update]
+usage: linpgtb [-h] [--compile COMPILE] [--install INSTALL] [--pack PACK] [--upload UPLOAD] [--release RELEASE] [--organize ORGANIZE] [--upgrade UPGRADE] [--zip ZIP] [--select-py SELECT_PY] [--show-compile-messages] [--platform] [--resize RESIZE] [--size SIZE] [--output OUTPUT] [--reinstall] [--check-update]
 
 options:
   -h, --help            show this help message and exit
@@ -48,7 +48,6 @@ options:
                         Organize project
   --upgrade UPGRADE     Upgrade a pip package
   --zip ZIP             Create a source distribution
-  --fix FIX             Fix certain cython related issues
   --select-py SELECT_PY
                         Select the python version
   --show-compile-messages

@@ -1,7 +1,6 @@
 import argparse
 
 from ._execute import set_python_version, sys
-from ._fixer import Fixer
 from .builder import Builder
 from .image_resizer import ImageResizer
 from .organizer import Organizer
@@ -21,7 +20,6 @@ def cli() -> None:
     parser.add_argument("--organize", "-o", type=str, help="Organize project")
     parser.add_argument("--upgrade", type=str, help="Upgrade a pip package")
     parser.add_argument("--zip", type=str, help="Create a source distribution")
-    parser.add_argument("--fix", type=str, help="Create a source distribution")
     parser.add_argument("--select-py", type=str, help="Select the python version")
     parser.add_argument(
         "--show-compile-messages",
@@ -81,8 +79,6 @@ def cli() -> None:
         Organizer.organize(args.organize)
     elif args.upgrade:
         PackageInstaller.upgrade(args.upgrade)
-    elif args.fix:
-        Fixer.match_case_to_if_else(args.fix)
     elif args.resize:
         if not args.size:
             print("Error: --size is required when using --resize")
