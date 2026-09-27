@@ -2,7 +2,6 @@ import argparse
 
 from ._execute import set_python_version, sys
 from .builder import Builder
-from .image_resizer import ImageResizer
 from .organizer import Organizer
 from .pkginstaller import PackageInstaller
 
@@ -28,18 +27,6 @@ def cli() -> None:
     )
     parser.add_argument(
         "--platform", action="store_true", help="Print current platform information"
-    )
-    parser.add_argument("--resize", type=str, help="Resize an image file")
-    parser.add_argument(
-        "--size",
-        type=str,
-        help="Target size: WxH, N%%, Wx, xH, <Wx, >Wx, <xH, or >xH",
-    )
-    parser.add_argument("--output", type=str, help="Output path for resized image")
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Overwrite the original image file",
     )
     parser.add_argument(
         "--reinstall",
@@ -79,11 +66,6 @@ def cli() -> None:
         Organizer.organize(args.organize)
     elif args.upgrade:
         PackageInstaller.upgrade(args.upgrade)
-    elif args.resize:
-        if not args.size:
-            print("Error: --size is required when using --resize")
-            sys.exit(1)
-        ImageResizer.resize(args.resize, args.size, args.output, args.overwrite)
     elif args.platform:
         print(f"python[{sys.platform}]-{sys.version}")
     elif args.reinstall:
