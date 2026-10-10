@@ -15,18 +15,16 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython"
 ]
-dependencies = ["mypy"]
+dependencies = ["cython>=3.3", "mypy"]
 description = "A set of tools for managing, compiling, and uploading your own package."
 license-files = ["LICEN[CS]E*"]
 name = "linpgtoolbox"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "26.2"
-
-[project.optional-dependencies]
-images = ["Pillow"]
+version = "26.10"
 
 [project.scripts]
 linpgtb = "linpgtoolbox.cli:cli"
@@ -36,7 +34,7 @@ linpgtb = "linpgtoolbox.cli:cli"
 "Homepage" = "https://github.com/LinpgFoundation/linpg-toolbox"
 
 [tool.black]
-target-version = ['py314']
+target-version = ['py315']
 
 [tool.linpgtoolbox]
 ignores = [".*_compiler\\.py$"]
@@ -50,7 +48,7 @@ includes = [
 disallow_any_generics = true
 disallow_untyped_calls = true
 disallow_untyped_defs = true
-python_version = "3.14"
+python_version = "3.15"
 warn_redundant_casts = true
 warn_return_any = true
 warn_unreachable = true

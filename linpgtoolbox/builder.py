@@ -127,7 +127,7 @@ class Builder:
     ) -> None:
         # Make sure required libraries are installed
         PackageInstaller.install("setuptools")
-        PackageInstaller.install("cython")
+        PackageInstaller.install("cython>=3.3")
         # Convert to abs path
         source_folder = os.path.abspath(source_folder)
         # Remove cache folder

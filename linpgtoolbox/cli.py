@@ -1,9 +1,7 @@
 import argparse
 
 from ._execute import set_python_version, sys
-from ._fixer import Fixer
 from .builder import Builder
-from .image_resizer import ImageResizer
 from .organizer import Organizer
 from .pkginstaller import PackageInstaller
 
@@ -21,7 +19,6 @@ def cli() -> None:
     parser.add_argument("--organize", "-o", type=str, help="Organize project")
     parser.add_argument("--upgrade", type=str, help="Upgrade a pip package")
     parser.add_argument("--zip", type=str, help="Create a source distribution")
-    parser.add_argument("--fix", type=str, help="Create a source distribution")
     parser.add_argument("--select-py", type=str, help="Select the python version")
     parser.add_argument(
         "--show-compile-messages",
@@ -30,18 +27,6 @@ def cli() -> None:
     )
     parser.add_argument(
         "--platform", action="store_true", help="Print current platform information"
-    )
-    parser.add_argument("--resize", type=str, help="Resize an image file")
-    parser.add_argument(
-        "--size",
-        type=str,
-        help="Target size: WxH, N%%, Wx, xH, <Wx, >Wx, <xH, or >xH",
-    )
-    parser.add_argument("--output", type=str, help="Output path for resized image")
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Overwrite the original image file",
     )
     parser.add_argument(
         "--reinstall",
@@ -81,13 +66,6 @@ def cli() -> None:
         Organizer.organize(args.organize)
     elif args.upgrade:
         PackageInstaller.upgrade(args.upgrade)
-    elif args.fix:
-        Fixer.match_case_to_if_else(args.fix)
-    elif args.resize:
-        if not args.size:
-            print("Error: --size is required when using --resize")
-            sys.exit(1)
-        ImageResizer.resize(args.resize, args.size, args.output, args.overwrite)
     elif args.platform:
         print(f"python[{sys.platform}]-{sys.version}")
     elif args.reinstall:

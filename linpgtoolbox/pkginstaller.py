@@ -1,5 +1,8 @@
 import importlib.metadata
 import json
+import ssl
+import sys
+import urllib.error
 import urllib.request
 
 from ._execute import execute_python
@@ -66,8 +69,17 @@ class PackageInstaller:
                 f"https://pypi.org/pypi/{pkg_name}/json", timeout=10
             ) as response:
                 latest: str = json.loads(response.read())["info"]["version"]
-        except Exception:
-            print("Failed to fetch latest version from PyPI.")
+        except Exception as e:
+            print(f"Failed to fetch latest version from PyPI: {e}")
+            # python.org builds on macOS ship without a CA bundle
+            if isinstance(e, urllib.error.URLError) and isinstance(
+                e.reason, ssl.SSLCertVerificationError
+            ):
+                print(
+                    "Hint: SSL certificates are not installed for this Python. "
+                    "On macOS, run 'Install Certificates.command' "
+                    f"in /Applications/Python {sys.version_info.major}.{sys.version_info.minor}/."
+                )
             return
         print(f"Latest version:  {latest}")
         current_parts: tuple[int, ...] = tuple(int(x) for x in current.split("."))

@@ -100,6 +100,9 @@ if __name__ == "__main__":
 
     # Whether to show compile messages (enabled via command line argument, default off for multiprocessing, shows progress bar)
     _show_compile_messages: bool = "--show-compile-messages" in sys.argv
+    # setuptools' setup() parses sys.argv and rejects unknown options, so strip ours
+    if _show_compile_messages:
+        sys.argv.remove("--show-compile-messages")
 
     # Remove parameter file
     os.remove(_data_path)
@@ -144,6 +147,7 @@ if __name__ == "__main__":
                     if _enable_multiprocessing is True:
                         cls.__processes.append(
                             Process(
+                                name=_path,
                                 target=_compile_file,
                                 args=(
                                     _source_folder,
@@ -190,6 +194,11 @@ if __name__ == "__main__":
             for _process in cls.__processes:
                 _process.join()
 
+        # Get paths of files that failed to compile
+        @classmethod
+        def failed(cls) -> list[str]:
+            return [_p.name for _p in cls.__processes if _p.exitcode != 0]
+
     # Initialize, create processes
     _CompileProcessManager.init()
     # Start all processes
@@ -205,3 +214,11 @@ if __name__ == "__main__":
         _print_progress_bar(_total, _total)
     # Do not exit before processes finish
     _CompileProcessManager.join()
+    # Fail loudly so that uncompiled source files do not get packed silently
+    if _failed := _CompileProcessManager.failed():
+        sys.stderr.write(
+            "Failed to compile:\n"
+            + "".join(f"  {_p}\n" for _p in _failed)
+            + "Rerun with --show-compile-messages for details.\n"
+        )
+        sys.exit(1)
